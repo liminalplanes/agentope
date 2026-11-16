@@ -3,7 +3,7 @@ export const site = {
 	url: "https://www.agentope.dev",
 	title: "agentope - evaluate agent decisions before go-live.",
 	ogImage: "/og.png",
-	version: "0.3.0",
+	version: "0.3.1",
 	description:
 		"Find out whether a change to how your LLM agent decides would actually help your users, using the conversations you already have. Offline evaluation with evidence levels and verdicts, no logprobs.",
 	github: "https://github.com/liminalplanes/agentope",
