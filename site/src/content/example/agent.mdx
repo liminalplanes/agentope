@@ -1,0 +1,18 @@
+```python title="agent.py"
+import agentope as ao
+
+# The model proposes the first action, as before.
+tool = model_choice(conversation)
+
+# New: in 10% of conversations, take a random option the team is happy
+# to take at random, and record the coin flip on the model's span.
+tool = ao.explore(
+    "tool_choice",
+    llm_choice=tool,
+    safe_candidates=["search_kb", "lookup_order", "__none__"],
+    candidates=["search_kb", "lookup_order", "escalate_to_human", "__none__"],
+    epsilon=0.1,
+    join_key=conversation.id,
+    log=lambda record: span.set_attributes(ao.span_attributes(record)),
+)
+```

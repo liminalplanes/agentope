@@ -7,9 +7,11 @@ type Heading = { id: string; text: string; level: number };
 export function TableOfContents({
 	articleId,
 	deps,
+	label = "On this page",
 }: {
 	articleId: string;
 	deps: unknown;
+	label?: string;
 }) {
 	const [headings, setHeadings] = useState<Heading[]>([]);
 	const [active, setActive] = useState<string | null>(null);
@@ -53,9 +55,9 @@ export function TableOfContents({
 
 	if (headings.length < 2) return null;
 	return (
-		<nav aria-label="On this page" className="text-sm">
+		<nav aria-label={label} className="text-sm">
 			<p className="mb-3 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">
-				On this page
+				{label}
 			</p>
 			<ul className="flex flex-col gap-1.5 border-l">
 				{headings.map((h) => (

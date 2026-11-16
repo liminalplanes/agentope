@@ -1,0 +1,6 @@
+```python title="policies.py"
+def lookup_when_order_number(context, candidates):
+    if context["has_order_number"]:
+        return {"lookup_order": 1.0}
+    return {"search_kb": 1.0}
+```

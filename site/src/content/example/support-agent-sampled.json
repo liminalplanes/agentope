@@ -1,0 +1,213 @@
+{
+	"meta": {
+		"conversations": 12000,
+		"days": 14,
+		"epsilon": 0.1,
+		"model": "qwen2.5-7b-instruct",
+		"safe_candidates": ["search_kb", "lookup_order", "__none__"],
+		"actions": ["search_kb", "lookup_order", "escalate_to_human", "__none__"]
+	},
+	"steps": {
+		"check": {
+			"command": "agentope check --traces traces.otlp.json.gz --n 64 \\\n    --context intent=app.intent,has_order_number=app.has_order_number,customer_tier=app.customer_tier",
+			"output": "tool_choice · 12,000 decisions found in traces.otlp.json.gz\n\n  Level 1 Logged     ✗  no logged propensities  → use agentope.explore or agentope.randomize\n  Level 2 Sampled    ✓  stored inputs: 12,000/12,000 · logging model: qwen2.5-7b-instruct (availability is checked by `sample`)\n                        est. cost at N=64: 768k calls (logging)\n  Level 3 Estimated  ✓  context has 3 features: customer_tier, has_order_number, intent (needs --accept-unverifiable)\n  Level 4 Modeled    –  not available yet (v0.4)\n\n  Candidates: from tool definitions on 100%; __none__ included\n  Best available: Level 2"
+		},
+		"import": {
+			"command": "agentope import --traces traces.otlp.json.gz \\\n    --context intent=app.intent,has_order_number=app.has_order_number,customer_tier=app.customer_tier \\\n    -o decisions.jsonl",
+			"output": "traces.otlp.json.gz · 12,000 traces · 45,351 spans\ntool_choice      12,000 decisions\n  chosen         9,351 from execute_tool spans · 2,649 __none__ (no tool call)\n  candidates     from tool definitions on 12,000/12,000\n  propensities   none logged\n  context        intent, has_order_number, customer_tier\n  stored inputs  12,000/12,000 written to inputs → Level 3 only; Level 2 after agentope sample\nwrote decisions.jsonl"
+		},
+		"sample": {
+			"command": "agentope sample decisions.jsonl -o samples.jsonl --n 64 --n-per-request 64 \\\n    --base-url http://localhost:8000/v1 --yes",
+			"output": "sampled 12,000 (decision, policy) pairs → samples.jsonl\n  reused        0 already in samples.jsonl"
+		},
+		"eval": {
+			"command": "agentope eval decisions.jsonl --samples samples.jsonl \\\n    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
+			"output": "agentope · tool_choice · target: policies.py:lookup_when_order_number\n────────────────────────────────────────────────────────────\nEvidence level   L2 Sampled (N=64, α=0.5)\nDecisions        12,000   (rewarded 12,000 · expired 0 · 0.0%)\n\nLogging policy   0.637  realized mean outcome\nTarget policy    0.711  SNIPS   (IPS 0.755)\nDifference      +0.074  95% CI [+0.058, +0.090]\n\nDiagnostics      ESS 3,625 (30% of n) · max weight 44 · min propensity 0.00758\n                 support violations 0.1% of target mass (15 decisions) [checked against actions the logging model never produced in samples]\n                 logged choice reproduced in samples: 100% · 208 decisions with < 3 matching samples\n\nVerdict          ok\n\nThis estimate assumes:\n  • The stored inputs are everything the model saw (system prompt, history, tool definitions, retrieved documents)\n  • The logging model (qwen2.5-7b-instruct) behaves today as it did when logging; the logged choice came up again in samples on 100% of decisions\n  • 64 samples per decision (smoothing α=0.5) estimate the propensities well enough; 208 decisions saw the logged choice fewer than 3 times\n  • Which tool is called matters, not its arguments or wording (action map: tool)\n  • Only tool_choice changes; later steps behave as they did under the logging policy\n  • An outcome missing within 3d means outcome = 0\n\nTo strengthen this:\n  • Sample more per decision (agentope sample --n 128) to firm up propensities\n  • The target puts 0.1% of its probability on actions the logging policy never takes; sample more per decision, or keep the target within what the model does"
+		},
+		"refused": {
+			"command": "agentope eval decisions.jsonl \\\n    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
+			"output": "agentope: refused\n\nLevel 3 (Estimated) needs your explicit acceptance of an assumption that cannot be checked.\n\nAt Level 3, agentope models how the logging policy chose from `context`.\nThat is only valid if every input that influenced both the\nagent's choice and the outcome is recorded in `context`. Anything the agent saw\nthat is not in `context` (retrieved documents, conversation tone, ...) can bias\nthe result in either direction, and nothing in the data can reveal it.\n\nRe-run with --accept-unverifiable (CLI) or accept_unverifiable=True (Python) to\nproceed, or log with agentope.explore / agentope.randomize to reach Level 1."
+		}
+	},
+	"report": {
+		"decision_point": "tool_choice",
+		"target": "policies.py:lookup_when_order_number",
+		"level": {
+			"level": 2,
+			"name": "Sampled",
+			"detail": "N=64, α=0.5"
+		},
+		"estimates": {
+			"logging_mean": 0.6370833333333333,
+			"snips": 0.7110038896347676,
+			"ips": 0.7545359249683558,
+			"difference": 0.07392055630143424,
+			"ci95": [0.05761428172383598, 0.0895123169086669],
+			"trustworthy": true
+		},
+		"diagnostics": {
+			"n": 12000,
+			"n_excluded": 0,
+			"n_logging_mean": 12000,
+			"rewarded": 12000,
+			"expired": 0,
+			"expired_share": 0.0,
+			"outcomes": 12000,
+			"unmatched_outcomes": 0,
+			"shared_join_key_decisions": 0,
+			"explored": 0,
+			"ess": 3625.4768052075196,
+			"ess_share": 0.30212306710062664,
+			"max_weight": 44.0,
+			"min_propensity": 0.007575757575757576,
+			"support_violation_mass": 0.00125,
+			"support_violation_decisions": 15,
+			"support_check": "actions the logging model never produced in samples",
+			"bootstrap": {
+				"resamples": 2000,
+				"undefined": 0,
+				"cluster": "join_key"
+			},
+			"propensity_model": null,
+			"sampling": {
+				"alpha": 0.5,
+				"n_median": 64.0,
+				"samples": 768000,
+				"failed_samples": 0,
+				"reproduction_rate": 0.99775,
+				"low_count_decisions": 208,
+				"off_candidate_share": 0.0,
+				"model_mismatch_share": 0.0,
+				"input_hash_mismatches": 0,
+				"deterministic": false,
+				"models": ["qwen2.5-7b-instruct"]
+			},
+			"absent_means_default": false
+		},
+		"verdict": "ok",
+		"verdict_reasons": [],
+		"assumptions": [
+			"The stored inputs are everything the model saw (system prompt, history, tool definitions, retrieved documents)",
+			"The logging model (qwen2.5-7b-instruct) behaves today as it did when logging; the logged choice came up again in samples on 100% of decisions",
+			"64 samples per decision (smoothing α=0.5) estimate the propensities well enough; 208 decisions saw the logged choice fewer than 3 times",
+			"Which tool is called matters, not its arguments or wording (action map: tool)",
+			"Only tool_choice changes; later steps behave as they did under the logging policy",
+			"An outcome missing within 3d means outcome = 0"
+		],
+		"how_to_improve": [
+			"Sample more per decision (agentope sample --n 128) to firm up propensities",
+			"The target puts 0.1% of its probability on actions the logging policy never takes; sample more per decision, or keep the target within what the model does"
+		],
+		"warnings": [],
+		"inputs": {
+			"files": {
+				"decisions.jsonl": "5b9513df32fb07b6a6eba3ca8181494a4fd50eda93cf78756f26762a1d269a6e",
+				"helpdesk.csv": "395e5357932b09ea611094c3b7632b63176e8c5e73f752a5de400c342bdde401",
+				"samples.jsonl": "989046abc8ab0104d5d79e62edf23e1482abd7484d43c8a1c662aeef6a797e38",
+				"policies.py": "b60da48704ce3db4665ec5658ee2683b350e616aab30e66fa438ef31a946ec67"
+			},
+			"agentope_version": "0.3.0",
+			"seed": 0,
+			"n_bootstrap": 2000,
+			"folds": null,
+			"alpha": 0.5,
+			"horizon_seconds": 259200.0,
+			"default_reward": 0.0,
+			"absent_means_default": false,
+			"action_map": "tool"
+		}
+	},
+	"truth": {
+		"running": 0.6389989963578089,
+		"lookup_when_order_number": 0.7186,
+		"escalate_pro": 0.69973125,
+		"lookup_difference": 0.07960100364219114,
+		"escalate_difference": 0.06073225364219115
+	},
+	"picture": {
+		"rows": [
+			{
+				"conversation": "conv-48213",
+				"intent": "refund",
+				"has_order_number": false,
+				"agent_did": "lookup_order",
+				"rule_would": "search_kb",
+				"resolved": false,
+				"model_picks": 3,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48214",
+				"intent": "order_status",
+				"has_order_number": true,
+				"agent_did": "__none__",
+				"rule_would": "lookup_order",
+				"resolved": true,
+				"model_picks": 14,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48215",
+				"intent": "order_status",
+				"has_order_number": true,
+				"agent_did": "lookup_order",
+				"rule_would": "lookup_order",
+				"resolved": true,
+				"model_picks": 34,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48216",
+				"intent": "order_status",
+				"has_order_number": true,
+				"agent_did": "search_kb",
+				"rule_would": "lookup_order",
+				"resolved": false,
+				"model_picks": 20,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48217",
+				"intent": "product_question",
+				"has_order_number": false,
+				"agent_did": "search_kb",
+				"rule_would": "search_kb",
+				"resolved": true,
+				"model_picks": 35,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48218",
+				"intent": "refund",
+				"has_order_number": true,
+				"agent_did": "lookup_order",
+				"rule_would": "lookup_order",
+				"resolved": false,
+				"model_picks": 28,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48219",
+				"intent": "product_question",
+				"has_order_number": false,
+				"agent_did": "escalate_to_human",
+				"rule_would": "search_kb",
+				"resolved": true,
+				"model_picks": 2,
+				"n": 64
+			},
+			{
+				"conversation": "conv-48220",
+				"intent": "order_status",
+				"has_order_number": false,
+				"agent_did": "lookup_order",
+				"rule_would": "search_kb",
+				"resolved": true,
+				"model_picks": 12,
+				"n": 64
+			}
+		],
+		"total": 12000,
+		"matched": 5586
+	}
+}

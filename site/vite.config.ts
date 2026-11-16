@@ -8,7 +8,20 @@ import rehypeSlug from "rehype-slug";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMdxFrontmatter from "remark-mdx-frontmatter";
+import type { ShikiTransformer } from "shiki";
 import { defineConfig, type Plugin } from "vite";
+
+/** Exposes the language and an optional title="…" from a fence (```python title="policies.py")
+ * for the code block's header. */
+const codeMeta: ShikiTransformer = {
+	name: "agentope-code-meta",
+	pre(node) {
+		node.properties["data-language"] = this.options.lang;
+		const meta = (this.options.meta as { __raw?: string } | undefined)?.__raw;
+		const title = meta && /title="([^"]+)"/.exec(meta)?.[1];
+		if (title) node.properties["data-title"] = title;
+	},
+};
 
 /**
  * MDX for docs pages and snippets. Imports with a query (such as `?raw`, used to read
@@ -28,6 +41,7 @@ function mdxPlugin(): Plugin {
 				{
 					themes: { light: "github-light", dark: "github-dark-dimmed" },
 					defaultColor: false,
+					transformers: [codeMeta],
 				},
 			],
 		],

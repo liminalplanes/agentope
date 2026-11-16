@@ -1,0 +1,380 @@
+{
+	"meta": {
+		"conversations": 12000,
+		"days": 14,
+		"epsilon": 0.1,
+		"model": "qwen2.5-7b-instruct",
+		"safe_candidates": ["search_kb", "lookup_order", "__none__"],
+		"actions": ["search_kb", "lookup_order", "escalate_to_human", "__none__"]
+	},
+	"steps": {
+		"check": {
+			"command": "agentope check --traces traces.otlp.json.gz \\\n    --context intent=app.intent,has_order_number=app.has_order_number,customer_tier=app.customer_tier",
+			"output": "tool_choice · 12,000 decisions found in traces.otlp.json.gz\n\n  Level 1 Logged     ✓  1,211/12,000 with logged propensities (1,211 explored)\n  Level 2 Sampled    ✗  no stored inputs (content capture off)  → turn on content capture\n  Level 3 Estimated  ✓  context has 3 features: customer_tier, has_order_number, intent (needs --accept-unverifiable)\n  Level 4 Modeled    –  not available yet (v0.4)\n\n  Candidates: from agentope.candidates on 100%; __none__ included\n  Best available: Level 1\n\n  Warnings:\n    • Without stored inputs, LLM targets (prompt or model changes) can't be evaluated, and only the tool and toolset action maps work"
+		},
+		"import": {
+			"command": "agentope import --traces traces.otlp.json.gz \\\n    --context intent=app.intent,has_order_number=app.has_order_number,customer_tier=app.customer_tier \\\n    -o decisions.jsonl",
+			"output": "traces.otlp.json.gz · 12,000 traces · 45,196 spans\ntool_choice      12,000 decisions\n  chosen         12,000 from agentope.chosen\n  candidates     from agentope.candidates on 12,000/12,000\n  propensities   1,211 explored (ε=0.1) · 10,789 without\n  context        intent, has_order_number, customer_tier\n  stored inputs  none (content capture off) → Levels 1 and 3 available\nwrote decisions.jsonl"
+		},
+		"eval": {
+			"command": "agentope eval decisions.jsonl --outcomes helpdesk.csv --horizon 3d \\\n    --target policies.py:lookup_when_order_number",
+			"output": "agentope · tool_choice · target: policies.py:lookup_when_order_number\n────────────────────────────────────────────────────────────\nEvidence level   L1 Logged (ε-exploration)\nDecisions        1,211   (rewarded 1,211 · expired 0 · 0.0%)\n                 10,789 without logged propensities excluded\n\nLogging policy   0.629  realized mean outcome (all 12,000 decisions)\nTarget policy    0.695  SNIPS   (IPS 0.694)\nDifference      +0.066  95% CI [+0.022, +0.110]\n\nDiagnostics      ESS 403 (33% of n) · max weight 3 · min propensity 0.333\n                 support violations 0\n\nVerdict          ok\n\nWarnings:\n  • 10,789 of 12,000 decisions have no logged propensity and were excluded; the estimate covers only the included decisions\n\nThis estimate assumes:\n  • Logged propensities are the probabilities actually used when deciding\n  • Whether a decision was explored did not depend on its context (true when agentope.explore made the coin flip)\n  • Which tool is called matters, not its arguments or wording (action map: tool)\n  • Only tool_choice changes; later steps behave as they did under the logging policy\n  • An outcome missing within 3d means outcome = 0"
+		},
+		"refused": {
+			"command": "agentope eval decisions.jsonl --outcomes helpdesk.csv --horizon 3d \\\n    --target policies.py:escalate_pro",
+			"output": "agentope · tool_choice · target: policies.py:escalate_pro\n────────────────────────────────────────────────────────────\nEvidence level   L1 Logged (ε-exploration)\nDecisions        1,211   (rewarded 1,211 · expired 0 · 0.0%)\n                 10,789 without logged propensities excluded\n\nLogging policy   0.629  realized mean outcome (all 12,000 decisions)\nTarget policy    no trustworthy estimate\n                 (SNIPS 0.673 · IPS 0.540 · difference +0.044, shown for diagnosis only)\n\nDiagnostics      ESS 324 (27% of n) · max weight 3 · min propensity 0.333\n                 support violations 23.5% of target mass (284 decisions)\n\nVerdict          unreliable\n                  • support violations carry 23.5% of target probability (limit 1%)\n\nWarnings:\n  • 10,789 of 12,000 decisions have no logged propensity and were excluded; the estimate covers only the included decisions\n\nThis estimate assumes:\n  • Logged propensities are the probabilities actually used when deciding\n  • Whether a decision was explored did not depend on its context (true when agentope.explore made the coin flip)\n  • Which tool is called matters, not its arguments or wording (action map: tool)\n  • Only tool_choice changes; later steps behave as they did under the logging policy\n  • An outcome missing within 3d means outcome = 0\n\nTo strengthen this:\n  • The target puts 23.5% of its probability on actions the logging policy never takes; include them in exploration, or keep the target within the logged actions"
+		}
+	},
+	"report": {
+		"decision_point": "tool_choice",
+		"target": "policies.py:lookup_when_order_number",
+		"level": {
+			"level": 1,
+			"name": "Logged",
+			"detail": "ε-exploration"
+		},
+		"estimates": {
+			"logging_mean": 0.62925,
+			"snips": 0.6947890818858561,
+			"ips": 0.6936416184971098,
+			"difference": 0.06553908188585611,
+			"ci95": [0.02197478714034062, 0.10954915458937187],
+			"trustworthy": true
+		},
+		"diagnostics": {
+			"n": 1211,
+			"n_excluded": 10789,
+			"n_logging_mean": 12000,
+			"rewarded": 1211,
+			"expired": 0,
+			"expired_share": 0.0,
+			"outcomes": 12000,
+			"unmatched_outcomes": 0,
+			"shared_join_key_decisions": 0,
+			"explored": 1211,
+			"ess": 403.0,
+			"ess_share": 0.33278282411230387,
+			"max_weight": 3.0,
+			"min_propensity": 0.3333333333333333,
+			"support_violation_mass": 0.0,
+			"support_violation_decisions": 0,
+			"support_check": "exact",
+			"bootstrap": {
+				"resamples": 2000,
+				"undefined": 0,
+				"cluster": "join_key"
+			},
+			"propensity_model": null,
+			"sampling": null,
+			"absent_means_default": false
+		},
+		"verdict": "ok",
+		"verdict_reasons": [],
+		"assumptions": [
+			"Logged propensities are the probabilities actually used when deciding",
+			"Whether a decision was explored did not depend on its context (true when agentope.explore made the coin flip)",
+			"Which tool is called matters, not its arguments or wording (action map: tool)",
+			"Only tool_choice changes; later steps behave as they did under the logging policy",
+			"An outcome missing within 3d means outcome = 0"
+		],
+		"how_to_improve": [],
+		"warnings": [
+			"10,789 of 12,000 decisions have no logged propensity and were excluded; the estimate covers only the included decisions"
+		],
+		"inputs": {
+			"files": {
+				"decisions.jsonl": "4d4e0f6b98d40e0fac603586848e1debb02b6adfdf7b4ca4de1846f36a6aad71",
+				"helpdesk.csv": "a142eacbc59537734589c6537e1511fa378affb1cf0398c162d506b39d872cc2",
+				"policies.py": "b60da48704ce3db4665ec5658ee2683b350e616aab30e66fa438ef31a946ec67"
+			},
+			"agentope_version": "0.3.0",
+			"seed": 0,
+			"n_bootstrap": 2000,
+			"folds": null,
+			"alpha": null,
+			"horizon_seconds": 259200.0,
+			"default_reward": 0.0,
+			"absent_means_default": false,
+			"action_map": "tool"
+		}
+	},
+	"refused": {
+		"decision_point": "tool_choice",
+		"target": "policies.py:escalate_pro",
+		"level": {
+			"level": 1,
+			"name": "Logged",
+			"detail": "ε-exploration"
+		},
+		"estimates": {
+			"logging_mean": 0.62925,
+			"snips": 0.6728395061728395,
+			"ips": 0.5400495458298926,
+			"difference": 0.04358950617283952,
+			"ci95": [-0.00817221983990851, 0.09256770725343837],
+			"trustworthy": false
+		},
+		"diagnostics": {
+			"n": 1211,
+			"n_excluded": 10789,
+			"n_logging_mean": 12000,
+			"rewarded": 1211,
+			"expired": 0,
+			"expired_share": 0.0,
+			"outcomes": 12000,
+			"unmatched_outcomes": 0,
+			"shared_join_key_decisions": 0,
+			"explored": 1211,
+			"ess": 324.0,
+			"ess_share": 0.2675474814203138,
+			"max_weight": 3.0,
+			"min_propensity": 0.3333333333333333,
+			"support_violation_mass": 0.23451692815854666,
+			"support_violation_decisions": 284,
+			"support_check": "exact",
+			"bootstrap": {
+				"resamples": 2000,
+				"undefined": 0,
+				"cluster": "join_key"
+			},
+			"propensity_model": null,
+			"sampling": null,
+			"absent_means_default": false
+		},
+		"verdict": "unreliable",
+		"verdict_reasons": [
+			"support violations carry 23.5% of target probability (limit 1%)"
+		],
+		"assumptions": [
+			"Logged propensities are the probabilities actually used when deciding",
+			"Whether a decision was explored did not depend on its context (true when agentope.explore made the coin flip)",
+			"Which tool is called matters, not its arguments or wording (action map: tool)",
+			"Only tool_choice changes; later steps behave as they did under the logging policy",
+			"An outcome missing within 3d means outcome = 0"
+		],
+		"how_to_improve": [
+			"The target puts 23.5% of its probability on actions the logging policy never takes; include them in exploration, or keep the target within the logged actions"
+		],
+		"warnings": [
+			"10,789 of 12,000 decisions have no logged propensity and were excluded; the estimate covers only the included decisions"
+		],
+		"inputs": {
+			"files": {
+				"decisions.jsonl": "4d4e0f6b98d40e0fac603586848e1debb02b6adfdf7b4ca4de1846f36a6aad71",
+				"helpdesk.csv": "a142eacbc59537734589c6537e1511fa378affb1cf0398c162d506b39d872cc2",
+				"policies.py": "b60da48704ce3db4665ec5658ee2683b350e616aab30e66fa438ef31a946ec67"
+			},
+			"agentope_version": "0.3.0",
+			"seed": 0,
+			"n_bootstrap": 2000,
+			"folds": null,
+			"alpha": null,
+			"horizon_seconds": 259200.0,
+			"default_reward": 0.0,
+			"absent_means_default": false,
+			"action_map": "tool"
+		}
+	},
+	"truth": {
+		"running": 0.6244774300553614,
+		"lookup_when_order_number": 0.7186,
+		"escalate_pro": 0.69973125,
+		"lookup_difference": 0.09412256994463863,
+		"escalate_difference": 0.07525381994463864
+	},
+	"trace": {
+		"span": {
+			"traceId": "30803889fa6197748d118e3781728a07",
+			"spanId": "ef44c0d53ee4da5a",
+			"parentSpanId": "7989e9d083a4e629",
+			"name": "chat qwen2.5-7b-instruct",
+			"kind": 3,
+			"startTimeUnixNano": "1792391881010046976",
+			"attributes": [
+				{
+					"key": "gen_ai.operation.name",
+					"value": {
+						"stringValue": "chat"
+					}
+				},
+				{
+					"key": "gen_ai.request.model",
+					"value": {
+						"stringValue": "qwen2.5-7b-instruct"
+					}
+				},
+				{
+					"key": "gen_ai.request.temperature",
+					"value": {
+						"doubleValue": 0.7
+					}
+				},
+				{
+					"key": "gen_ai.response.finish_reasons",
+					"value": {
+						"arrayValue": {
+							"values": [
+								{
+									"stringValue": "tool_calls"
+								}
+							]
+						}
+					}
+				},
+				{
+					"key": "agentope.decision_id",
+					"value": {
+						"stringValue": "conv-48235:1"
+					}
+				},
+				{
+					"key": "agentope.chosen",
+					"value": {
+						"stringValue": "search_kb"
+					}
+				},
+				{
+					"key": "agentope.explored",
+					"value": {
+						"boolValue": true
+					}
+				},
+				{
+					"key": "agentope.propensity",
+					"value": {
+						"doubleValue": 0.3333333333333333
+					}
+				},
+				{
+					"key": "agentope.llm_choice",
+					"value": {
+						"stringValue": "lookup_order"
+					}
+				},
+				{
+					"key": "agentope.safe_candidates",
+					"value": {
+						"arrayValue": {
+							"values": [
+								{
+									"stringValue": "search_kb"
+								},
+								{
+									"stringValue": "lookup_order"
+								},
+								{
+									"stringValue": "__none__"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		"llm_choice": "lookup_order",
+		"chosen": "search_kb",
+		"tree": [
+			{
+				"name": "invoke_agent support-agent",
+				"notes": [
+					"gen_ai.conversation.id=conv-48235",
+					"app.intent=order_status · app.has_order_number=true · app.customer_tier=standard"
+				]
+			},
+			{
+				"name": "chat qwen2.5-7b-instruct",
+				"role": "the decision",
+				"notes": [
+					"model wanted lookup_order · agentope.explored=true · agentope.propensity=0.333"
+				]
+			},
+			{
+				"name": "execute_tool search_kb",
+				"role": "what ran",
+				"notes": []
+			},
+			{
+				"name": "chat qwen2.5-7b-instruct",
+				"role": "final answer",
+				"notes": []
+			}
+		]
+	},
+	"policies": "\"\"\"Policies the support team wants to evaluate before changing the agent.\"\"\"\n\n\ndef lookup_when_order_number(context, candidates):\n    \"\"\"Look up the order whenever the customer gives an order number.\"\"\"\n    if context[\"has_order_number\"]:\n        return {\"lookup_order\": 1.0}\n    return {\"search_kb\": 1.0}\n\n\ndef escalate_pro(context, candidates):\n    \"\"\"Send every pro customer to a person; otherwise as above.\"\"\"\n    if context[\"customer_tier\"] == \"pro\":\n        return {\"escalate_to_human\": 1.0}\n    return lookup_when_order_number(context, candidates)\n",
+	"outcomes_head": [
+		"join_key,t,value",
+		"conv-48213,2026-10-21T06:00:32Z,0",
+		"conv-48214,2026-10-20T10:36:54Z,1",
+		"conv-48215,2026-10-20T21:17:05Z,1"
+	],
+	"picture": {
+		"rows": [
+			{
+				"conversation": "conv-48235",
+				"intent": "order_status",
+				"has_order_number": true,
+				"agent_did": "search_kb",
+				"rule_would": "lookup_order",
+				"resolved": false
+			},
+			{
+				"conversation": "conv-48240",
+				"intent": "account",
+				"has_order_number": false,
+				"agent_did": "search_kb",
+				"rule_would": "search_kb",
+				"resolved": false
+			},
+			{
+				"conversation": "conv-48243",
+				"intent": "refund",
+				"has_order_number": true,
+				"agent_did": "lookup_order",
+				"rule_would": "lookup_order",
+				"resolved": true
+			},
+			{
+				"conversation": "conv-48254",
+				"intent": "refund",
+				"has_order_number": true,
+				"agent_did": "search_kb",
+				"rule_would": "lookup_order",
+				"resolved": true
+			},
+			{
+				"conversation": "conv-48256",
+				"intent": "account",
+				"has_order_number": false,
+				"agent_did": "lookup_order",
+				"rule_would": "search_kb",
+				"resolved": false
+			},
+			{
+				"conversation": "conv-48257",
+				"intent": "account",
+				"has_order_number": false,
+				"agent_did": "lookup_order",
+				"rule_would": "search_kb",
+				"resolved": false
+			},
+			{
+				"conversation": "conv-48262",
+				"intent": "order_status",
+				"has_order_number": true,
+				"agent_did": "search_kb",
+				"rule_would": "lookup_order",
+				"resolved": false
+			},
+			{
+				"conversation": "conv-48275",
+				"intent": "product_question",
+				"has_order_number": true,
+				"agent_did": "search_kb",
+				"rule_would": "lookup_order",
+				"resolved": true
+			}
+		],
+		"total": 1211,
+		"matched": 403
+	}
+}

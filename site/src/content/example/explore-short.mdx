@@ -1,0 +1,8 @@
+```python title="agent.py"
+tool = ao.explore(
+    "tool_choice", llm_choice=tool,
+    safe_candidates=["search_kb", "lookup_order", "__none__"],
+    epsilon=0.1, join_key=conversation.id,
+    log=lambda r: span.set_attributes(ao.span_attributes(r)),
+)
+```

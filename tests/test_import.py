@@ -146,6 +146,7 @@ def test_content_capture_genai(tmp_path):
     }
     assert imported.summary.chosen_from == {"response content": 1}
     assert imported.summary.stored_inputs == 1
+    assert "Level 2 after agentope sample" in imported.summary.render()
 
     with_args = ao.import_traces(path, action_map="tool+args:order_id")
     assert with_args[0]["chosen"] == 'lookup_order(order_id="123")'

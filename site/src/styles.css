@@ -34,7 +34,7 @@
   --weak-bg: #fbeedb;
   --bad: #b42318;
   --bad-bg: #fbe6e3;
-  --radius: 0.625rem;
+  --radius: 0.375rem;
   --sidebar: #f6f7f9;
   --sidebar-foreground: #111318;
   --sidebar-primary: #111318;
@@ -230,13 +230,6 @@
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 0.1em 0.35em;
-}
-.prose-docs pre {
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  line-height: 1.65;
-  overflow-x: auto;
-  padding: 1rem 1.1rem;
 }
 .prose-docs table {
   width: 100%;

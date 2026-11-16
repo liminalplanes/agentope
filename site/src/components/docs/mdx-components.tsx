@@ -6,24 +6,81 @@ import { SiteLink } from "#/components/docs/doc-link";
 import { Verdict } from "#/components/verdict";
 import { cn } from "#/lib/utils";
 
-/** Code blocks (already highlighted by Shiki at build time) with a copy button. */
+const LANGUAGE_LABELS: Record<string, string> = {
+	sh: "shell",
+	bash: "shell",
+	shell: "shell",
+	text: "output",
+	txt: "output",
+	py: "python",
+};
+
+/** The frame shared by code and terminal blocks: a header with a label, then the code. */
+export function CodeFrame({
+	label,
+	copyText,
+	copyLabel = "Copy",
+	children,
+	className,
+}: {
+	label: string;
+	copyText: string | (() => string);
+	copyLabel?: string;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				"min-w-0 overflow-hidden rounded-[4px] border bg-card",
+				className,
+			)}
+		>
+			<div className="flex h-8 items-center justify-between border-b bg-muted/60 pr-1 pl-3">
+				<span className="font-mono text-[0.7rem] tracking-wide text-muted-foreground">
+					{label}
+				</span>
+				<CopyButton
+					text={copyText}
+					label={copyLabel}
+					className="size-6 [&_svg]:size-3.5"
+				/>
+			</div>
+			{children}
+		</div>
+	);
+}
+
+/** Code blocks, highlighted by Shiki at build time; labelled with the file or language. */
 export function CodeBlock({
 	className,
 	children,
 	...props
 }: ComponentProps<"pre">) {
 	const ref = useRef<HTMLPreElement>(null);
+	const data = props as Record<string, unknown>;
+	const language = String(data["data-language"] ?? "");
+	const label =
+		(data["data-title"] as string | undefined) ??
+		LANGUAGE_LABELS[language] ??
+		(language || "code");
 	return (
-		<div className="group relative overflow-hidden rounded-lg border bg-card">
-			<pre ref={ref} className={cn("!bg-transparent", className)} {...props}>
+		<CodeFrame
+			label={label}
+			copyText={() => ref.current?.textContent ?? ""}
+			copyLabel="Copy code"
+		>
+			<pre
+				ref={ref}
+				className={cn(
+					"!m-0 overflow-x-auto !bg-transparent px-4 py-3.5 font-mono text-[0.8rem] leading-relaxed",
+					className,
+				)}
+				{...props}
+			>
 				{children}
 			</pre>
-			<CopyButton
-				text={() => ref.current?.textContent ?? ""}
-				label="Copy code"
-				className="absolute top-2 right-2 bg-card opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-			/>
-		</div>
+		</CodeFrame>
 	);
 }
 
@@ -51,7 +108,7 @@ function Anchor({ href = "", children, ...props }: ComponentProps<"a">) {
 
 function Table(props: ComponentProps<"table">) {
 	return (
-		<div className="overflow-x-auto rounded-lg border bg-card">
+		<div className="overflow-x-auto rounded-md border bg-card">
 			<table {...props} />
 		</div>
 	);
@@ -70,7 +127,7 @@ export function Callout({
 	return (
 		<aside
 			className={cn(
-				"flex gap-3 rounded-lg border p-4 text-[0.95rem]",
+				"flex gap-3 rounded-md border p-4 text-[0.95rem]",
 				kind === "warning" ? "border-weak/30 bg-weak-bg" : "bg-card",
 			)}
 		>

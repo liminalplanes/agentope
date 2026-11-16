@@ -1,0 +1,15 @@
+"""Policies the support team wants to evaluate before changing the agent."""
+
+
+def lookup_when_order_number(context, candidates):
+    """Look up the order whenever the customer gives an order number."""
+    if context["has_order_number"]:
+        return {"lookup_order": 1.0}
+    return {"search_kb": 1.0}
+
+
+def escalate_pro(context, candidates):
+    """Send every pro customer to a person; otherwise as above."""
+    if context["customer_tier"] == "pro":
+        return {"escalate_to_human": 1.0}
+    return lookup_when_order_number(context, candidates)

@@ -105,6 +105,8 @@ def test_level2_recovers_truth_for_callable_and_llm_targets(tmp_path):
     true_diff = sim.true_value(sim.best_action_target) - sim.true_value(sim.logging_policy)
     assert lo <= true_diff <= hi
     assert "logged choice reproduced in samples" in str(report)
+    if s["low_count_decisions"]:
+        assert any("--n 128" in h for h in report.how_to_improve)
     assert any("stored inputs are everything" in a for a in report.assumptions)
 
     llm_report = run_eval(decisions, outcomes, target=target_file, samples=samples)

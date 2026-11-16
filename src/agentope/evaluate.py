@@ -461,10 +461,14 @@ def evaluate(
             "checked exactly"
         )
     if diagnostics["support_violation_mass"] > 0:
+        remedy = (
+            "sample more per decision, or keep the target within what the model does"
+            if level == 2
+            else "include them in exploration, or keep the target within the logged actions"
+        )
         improve.append(
             f"The target puts {diagnostics['support_violation_mass']:.1%} of its probability on "
-            "actions the logging policy never takes; include them in exploration or keep "
-            "the target within the logged actions"
+            f"actions the logging policy never takes; {remedy}"
         )
     if (
         level == 1
@@ -614,4 +618,7 @@ def _level2_text(
             "and that the model, its version and its serving settings are unchanged"
         )
     if s["low_count_decisions"]:
-        improve.append("Sample more per decision (agentope sample --n 64) to firm up propensities")
+        more = max(64, int(s["n_median"]) * 2)
+        improve.append(
+            f"Sample more per decision (agentope sample --n {more}) to firm up propensities"
+        )

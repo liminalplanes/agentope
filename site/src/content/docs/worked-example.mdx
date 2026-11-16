@@ -1,0 +1,104 @@
+---
+title: Worked example
+description: A support agent's first move, from exploration to a verdict, with real agentope output.
+section: Guides
+order: 0
+---
+
+import { CodeBlock } from "#/components/docs/mdx-components"
+import { ACTION } from "#/components/example/decision-picture"
+import { IntervalChart } from "#/components/example/interval"
+import { Terminal } from "#/components/example/terminal"
+import { SpanJson, TraceTree } from "#/components/example/trace-tree"
+import Agent from "#/content/example/agent.mdx"
+import Policies from "#/content/example/policies.mdx"
+import { count, example, percent, points, signed } from "#/lib/example"
+
+export const r = example.report
+export const lo = r.estimates.ci95[0]
+export const hi = r.estimates.ci95[1]
+
+This walkthrough takes the path with the strongest evidence: the agent lets a small share of conversations try a random option. The [home page](/) shows the same agent left unchanged, with agentope asking the model again instead.
+
+A support team runs an agent on {example.meta.model}, served with vLLM. Every command and output on this page is real agentope output, produced by [`examples/support_agent/run.py`](https://github.com/liminalplanes/agentope/tree/main/examples/support_agent). The traces are simulated, so the true answer is known and you can see whether agentope gets it right.
+
+## The question
+
+At the start of every conversation, the model chooses one of four first moves: search the knowledge base (`search_kb`), look up the order (`lookup_order`), hand over to a person (`escalate_to_human`), or answer directly (`__none__`).
+
+The team suspects a plain rule would resolve more tickets: **look up the order whenever the customer gives an order number, and search the knowledge base otherwise.** An A/B test would take weeks of live traffic. They want an answer from conversations they already have.
+
+## Log a little exploration
+
+One change to the agent: wrap the first move in `agentope.explore`. In {percent(example.meta.epsilon)} of conversations it takes a random option from the three the team is happy to take at random. It never hands over to a person at random, because people are expensive. The coin flip is recorded on the model's span; the other {percent(1 - example.meta.epsilon)} run exactly as before.
+
+<Agent components={{ pre: CodeBlock }} />
+
+## What the traces contain
+
+After {example.meta.days} days there are {count(example.meta.conversations)} conversations, exported by the OpenTelemetry Collector. Content capture is off, so there are no prompts or messages, only span attributes. Here is the first conversation that was explored: the model wanted to {ACTION[example.trace.llm_choice]}, and the coin flip chose to {ACTION[example.trace.chosen]} instead.
+
+<TraceTree />
+<SpanJson />
+
+The helpdesk exports whether each ticket was resolved, with the conversation id as the key:
+
+<Terminal command="head -4 helpdesk.csv" output={example.outcomes_head.join("\n")} />
+
+## Check what the data supports
+
+`check` reports which kinds of evidence the traces support. It needs no outcomes and calls no model.
+
+<Terminal command={example.steps.check.command} output={example.steps.check.output} />
+
+Level 1 is available because of the exploration. Level 2 isn't: without message content, the model can't be asked again on what it saw.
+
+## Turn the traces into decisions
+
+<Terminal command={example.steps.import.command} output={example.steps.import.output} />
+
+Each conversation's first model call becomes a decision. The chosen action comes from the recorded coin flip, so what ran is exactly what was logged.
+
+## Write the rule down
+
+A policy is a Python function from the situation to probabilities over the options.
+
+<Policies components={{ pre: CodeBlock }} />
+
+## Evaluate
+
+<Terminal command={example.steps.eval.command} output={example.steps.eval.output} />
+
+## Read the result
+
+Under the rule, **{percent(r.estimates.snips, 1)} of tickets would have been resolved, against {percent(r.estimates.logging_mean, 1)} today**: {points(r.estimates.difference)} more, with a 95% interval from {signed(lo)} to {signed(hi)}.
+
+- The interval is clear of zero, so the improvement isn't noise.
+- It rests on the {count(r.diagnostics.n)} explored conversations; their effective sample is {count(Math.round(r.diagnostics.ess))}.
+- The rule only picks options the exploration also took, so there are no support violations.
+- The one assumption to think about: only the first move changes, and later turns go as they did.
+
+Because the traces are simulated, the true difference is known: **{signed(example.truth.lookup_difference)}**, inside the interval.
+
+<div className="max-w-md rounded-md border bg-card px-5 pt-5 pb-3">
+  <IntervalChart estimate={r.estimates.difference} lo={lo} hi={hi} truth={example.truth.lookup_difference} />
+</div>
+
+## Ask something the data can't answer
+
+The second policy hands every pro customer to a person. The exploration never handed over at random, so {percent(example.refused.diagnostics.support_violation_mass, 1)} of that policy's choices have no evidence behind them.
+
+<Terminal command={example.steps.refused.command} output={example.steps.refused.output} />
+
+agentope shows no estimate instead of a guess, and says what to log to make the question answerable. The raw number, {signed(example.refused.estimates.difference)}, happens to land near the true {signed(example.truth.escalate_difference)}, but nothing in the data could have told you that.
+
+## What this example doesn't cover
+
+- **It evaluates one decision.** Later turns are assumed to go as logged. To compare a whole new agent, choose the agent per conversation with `agentope.randomize`, so the outcome reflects everything it does.
+- **It tests a rule, not a new prompt.** For a prompt or model change, capture message content and let agentope ask the model again: see [Sampling the model](/docs/sampling).
+
+## Run it yourself
+
+```sh
+uv run python examples/support_agent/run.py
+```

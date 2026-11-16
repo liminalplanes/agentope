@@ -422,8 +422,8 @@ class ImportSummary:
             if self.stored_inputs:
                 where = f"written to {self.inputs_dir}" if self.inputs_dir else "found"
                 lines.append(
-                    f"  stored inputs  {self.stored_inputs:,}/{n:,} {where} → {levels} now; "
-                    "Level 2 once sampling lands (v0.3)"
+                    f"  stored inputs  {self.stored_inputs:,}/{n:,} {where} → {levels}; "
+                    "Level 2 after agentope sample"
                 )
             else:
                 lines.append(f"  stored inputs  none (content capture off) → {levels}")

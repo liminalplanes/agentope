@@ -117,14 +117,15 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 ## 6. Documentation and site
 
 - [x] Site in `site/`: TanStack Start (React 19, Vite 8), Tailwind CSS v4, shadcn/ui (Radix), Geist fonts bundled, light/dark/system theme without a flash, Biome. Every page prerendered to static HTML (`npm run build` → `dist/client`).
-- [x] Landing page rebuilt from components and simplified: hero with a compact example report (interval drawn to scale), evidence levels as a plain list, the four commands in one code block, trusted vs. refused estimate, code tabs (highlighted at build time), FAQ. π logo (policy) and matching favicon; no yellow highlighter anywhere (removed at the owner's request), the interval band is neutral.
+- [x] Landing page explains the value before the example, and the example needs no change to the agent: traces with messages (as most tracing tools record them) → `check` → `import` → `sample` (Level 2) → `eval`, ending with the report card (true value marked), a note on what happens without messages (Level 3 refusal), and exploration as the "stronger evidence" path. The hero picture uses real rows: what the agent did, what the rule would do, how often the model makes that choice when asked again, and the outcome.
 - [x] Docs in MDX (`site/src/content/docs/`) with sidebar from frontmatter, "On this page" with scroll tracking, previous/next, copyable code blocks (Shiki, dual theme), callouts and verdict badges. Each page is its own chunk; the nav reads frontmatter only.
 - [x] Pages: Introduction, Quickstart, Evidence levels, Reading a report, From traces, Sampling the model, CLI, Python API, Data formats. The CLI page comes from the real `--help` output; the Python API page from the real signatures.
 - [x] Removed the hand-written root `index.html` and `guide.html` (content moved into the site).
 - [ ] **Generate the Python API reference** from docstrings (it's hand-written for v0.3.0 and will drift). Options: a small script that runs `inspect` and writes MDX at build time, or griffe → JSON → MDX.
 - [ ] **Hosting.** Pick a host. For GitHub Pages at `liminalplanes.github.io/agentope`, set a base path (`/agentope/`) in the router and Vite config, and add a Pages workflow. Root-domain hosts (Netlify, Vercel, Cloudflare Pages) need no change.
 - [ ] Search (e.g. a ⌘K command palette over the docs, built from frontmatter and headings at build time).
-- [ ] The example numbers on the landing page and in the docs' trace example are illustrative. Replace them with output from a runnable example (simulated support agent → OTLP traces → import → eval).
+- [x] Runnable example `examples/support_agent/`, two scenarios from one simulated world (`uv run python examples/support_agent/run.py`, ~15 s): **sampled** (unchanged agent, traces with messages, a local stand-in model server answers like the simulated model; landing page) and **explored** (10% ε-exploration; docs walkthrough). Current run: Level 2 +0.074 [+0.058, +0.090], true +0.080; Level 1 +0.066 [+0.022, +0.110], true +0.094.
+- [ ] The docs' trace example and quickstart output are still illustrative; switch them to the example's real output.
 - [ ] Keep the site, `README.md` and the CLI in sync as features land.
 
 ---
@@ -159,3 +160,5 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 | 2026-11-16 | `LLMPolicy` is evaluated from samples, not sampled inside `evaluate` | Keeps all LLM calls in the explicit `sample` step (spec goal: deterministic evaluation) |
 | 2026-11-16 | `httpx` and PyYAML in the `llm` extra | Spec §1: sampling is optional |
 | 2026-11-16 | Version 0.3.0 | Level 2 milestone complete |
+| 2026-11-16 | Landing page example uses Level 2 (no change to the agent); exploration is the docs walkthrough | Most teams arrive with traces and no exploration |
+| 2026-11-16 | Fixed three messages found by running the example: import summary said Level 2 "once sampling lands"; Level 2 reports suggested `--n 64` when N was already 64 (now 2×N); support-violation advice mentioned exploration at Level 2 | Dogfooding |

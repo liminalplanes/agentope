@@ -31,7 +31,7 @@ export function DocPage({ doc }: { doc: Doc }) {
 					{prev ? (
 						<SiteLink
 							href={prev.href}
-							className="group flex flex-col gap-1 rounded-lg border p-4 text-sm transition-colors hover:bg-accent"
+							className="group flex flex-col gap-1 rounded-md border p-4 text-sm transition-colors hover:bg-accent"
 						>
 							<span className="flex items-center gap-1 text-muted-foreground">
 								<ArrowLeft className="size-3.5" /> Previous
@@ -44,7 +44,7 @@ export function DocPage({ doc }: { doc: Doc }) {
 					{next ? (
 						<SiteLink
 							href={next.href}
-							className="group flex flex-col items-end gap-1 rounded-lg border p-4 text-right text-sm transition-colors hover:bg-accent"
+							className="group flex flex-col items-end gap-1 rounded-md border p-4 text-right text-sm transition-colors hover:bg-accent"
 						>
 							<span className="flex items-center gap-1 text-muted-foreground">
 								Next <ArrowRight className="size-3.5" />
