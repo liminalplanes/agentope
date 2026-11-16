@@ -4,6 +4,7 @@ import {
 	Link,
 	Scripts,
 } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
@@ -62,6 +63,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 						</div>
 					</TooltipProvider>
 				</ThemeProvider>
+				<Analytics />
 				<Scripts />
 			</body>
 		</html>
