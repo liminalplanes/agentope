@@ -281,16 +281,23 @@ export const modelTools: Integration[] = [
 	},
 ];
 
-export function IntegrationLogo({ logo }: { logo: Logo | null }) {
+export function IntegrationLogo({
+	logo,
+	large = false,
+}: {
+	logo: Logo | null;
+	large?: boolean;
+}) {
+	const size = large ? "size-7" : "size-5";
 	if (logo === null) {
-		return <Plug aria-hidden="true" className="size-5 text-muted-foreground" />;
+		return <Plug aria-hidden="true" className={cn(size, "text-current")} />;
 	}
 	if (logo.kind === "icon") {
 		return (
 			<svg
 				viewBox="0 0 24 24"
 				aria-hidden="true"
-				className="size-5 fill-foreground"
+				className={cn(size, "fill-current")}
 			>
 				<path d={logo.path} />
 			</svg>
@@ -300,9 +307,13 @@ export function IntegrationLogo({ logo }: { logo: Logo | null }) {
 		<img
 			src={logo.src}
 			alt=""
-			width={24}
-			height={24}
-			className="size-6 rounded-[4px] grayscale transition-[filter] group-hover:grayscale-0"
+			width={large ? 28 : 24}
+			height={large ? 28 : 24}
+			className={cn(
+				large ? "size-7" : "size-6",
+				"rounded-[5px] grayscale transition-[filter,opacity] group-hover:grayscale-0",
+				large && "opacity-70 group-hover:opacity-100",
+			)}
 		/>
 	);
 }

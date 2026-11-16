@@ -98,7 +98,7 @@ export function AnimatedTerminal() {
 	const [phase, setPhase] = useState<Phase>("idle");
 	const [line, setLine] = useState(0);
 	const [chars, setChars] = useState(0);
-	const ref = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLElement>(null);
 	const report = sampled.report;
 
 	const start = useCallback(() => {
@@ -201,9 +201,8 @@ export function AnimatedTerminal() {
 			</ol>
 
 			<div className="min-w-0">
-				<div
+				<section
 					ref={ref}
-					role="region"
 					aria-label="An agentope session, replayed"
 					className="term overflow-hidden rounded-[4px] border bg-card"
 					data-phase={phase}
@@ -251,7 +250,7 @@ export function AnimatedTerminal() {
 							);
 						})}
 					</pre>
-				</div>
+				</section>
 				<p className="mt-3 mb-0 text-xs text-muted-foreground">
 					Excerpts of a real run on simulated traces. The rule would have
 					resolved {signed(report.estimates.difference as number)} more tickets

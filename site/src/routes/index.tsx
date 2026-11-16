@@ -6,7 +6,7 @@ import { AnimatedTerminal } from "#/components/example/animated-terminal";
 import {
 	EvaluableCompact,
 	LevelsCompact,
-	LogosRow,
+	LogoCloud,
 } from "#/components/example/compact";
 import { Button } from "#/components/ui/button";
 import { site } from "#/lib/site";
@@ -88,9 +88,14 @@ function Home() {
 				<LevelsCompact />
 			</Section>
 
-			<Section title="Works with your stack">
-				<LogosRow />
-			</Section>
+			<section className="mx-auto max-w-7xl px-5 pt-24 md:pt-32">
+				<h2 className="text-center text-[clamp(1.4rem,2.4vw,1.85rem)] leading-tight font-semibold tracking-[-0.03em]">
+					Works with your stack
+				</h2>
+				<div className="mt-10">
+					<LogoCloud />
+				</div>
+			</section>
 
 			<section className="mx-auto max-w-7xl px-5 pt-24 md:pt-32">
 				<div className="flex flex-wrap items-center justify-between gap-6 border-t pt-8">
