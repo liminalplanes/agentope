@@ -1,4 +1,4 @@
-"""`check`: what can be evaluated with the data at hand (spec §10).
+"""`check`: what can be evaluated with the data at hand.
 
 Runs on traces or decisions alone: no outcomes, no LLM calls, no target policy.
 """

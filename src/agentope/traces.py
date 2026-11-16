@@ -1,4 +1,4 @@
-"""Reading OTLP JSON trace exports (spec §11).
+"""Reading OTLP JSON trace exports.
 
 Accepts what the OpenTelemetry Collector's file exporter writes (one
 ``ExportTraceServiceRequest`` JSON object per line) as well as a single JSON

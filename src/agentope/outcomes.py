@@ -1,4 +1,4 @@
-"""Outcomes and the outcome join (spec §6.2)."""
+"""Outcomes and the outcome join."""
 
 from __future__ import annotations
 

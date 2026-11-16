@@ -1,4 +1,4 @@
-"""A small client for OpenAI-compatible chat-completions endpoints (spec §5.2).
+"""A small client for OpenAI-compatible chat-completions endpoints.
 
 Works with vLLM, Ollama, llama.cpp's server and hosted APIs. Needs the ``llm``
 extra (``httpx``). The endpoint comes from ``--base-url`` / ``base_url``, else

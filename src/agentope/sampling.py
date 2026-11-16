@@ -1,4 +1,4 @@
-"""Level 2: estimate propensities by re-running the logging model (spec §5.2).
+"""Level 2: estimate propensities by re-running the logging model.
 
 ``sample`` is the only step that calls an LLM. For each decision with a stored
 input, it asks the logging model (and optionally LLM target policies) for N
@@ -222,7 +222,7 @@ class LLMPolicy:
 
 
 def load_llm_target(path: PathArg) -> LLMPolicy:
-    """Read target.yaml / target.json (spec §7.1)."""
+    """Read target.yaml / target.json."""
     p = Path(path)
     text = p.read_text(encoding="utf-8")
     if p.suffix in (".yaml", ".yml"):

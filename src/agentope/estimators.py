@@ -1,4 +1,4 @@
-"""IPS, SNIPS, effective sample size and the bootstrap interval (spec §8).
+"""IPS, SNIPS, effective sample size and the bootstrap interval.
 
 No weight clipping: clipping trades bias for variance silently. Problems are
 reported through diagnostics and the verdict instead.

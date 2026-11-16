@@ -1,4 +1,4 @@
-"""Turn traces into decision records (spec §11).
+"""Turn traces into decision records.
 
 Each model (chat) span is a candidate decision. By default only the first model
 call of each agent run is used (``decisions="first"``): one decision per turn,

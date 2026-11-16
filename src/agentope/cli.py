@@ -1,4 +1,4 @@
-"""The `agentope` command (spec §7.1).
+"""The `agentope` command.
 
 Exit codes: 0 report produced · 1 refused (a guard fired, or sampling declined) · 2 usage error.
 """

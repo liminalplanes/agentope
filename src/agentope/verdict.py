@@ -1,4 +1,4 @@
-"""Verdict rules (spec §8)."""
+"""Verdict rules."""
 
 from __future__ import annotations
 

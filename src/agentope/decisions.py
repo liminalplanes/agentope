@@ -1,4 +1,4 @@
-"""Decision records (spec §6.1)."""
+"""Decision records."""
 
 from __future__ import annotations
 
@@ -74,7 +74,7 @@ def _key(value: object, name: str, where: str) -> str:
 class Decision:
     """One logged decision.
 
-    Besides the fields in spec §6.1, two optional fields are understood:
+    Besides the standard fields, two optional fields are understood:
 
     - ``safe_candidates``: for explored decisions, the set the exploration
       drew from uniformly (written by :func:`agentope.explore`).

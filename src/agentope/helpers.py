@@ -1,4 +1,4 @@
-"""Logging helpers that produce Level 1 data (spec §7.3)."""
+"""Logging helpers that produce Level 1 data."""
 
 from __future__ import annotations
 

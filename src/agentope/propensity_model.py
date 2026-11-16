@@ -1,4 +1,4 @@
-"""Level 3: estimate the logging policy from logged (context, chosen) pairs (spec §5.3).
+"""Level 3: estimate the logging policy from logged (context, chosen) pairs.
 
 A conditional (multinomial) logit: each action has a weight vector and an
 intercept, and probabilities are a softmax over the decision's own candidates.

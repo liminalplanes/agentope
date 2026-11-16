@@ -1,4 +1,4 @@
-"""Target policies: Python callables and target.jsonl files (spec §4.4, §6.3)."""
+"""Target policies: Python callables and target.jsonl files."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Action maps: turn what the agent did into an action id (spec §4.3)."""
+"""Action maps: turn what the agent did into an action id."""
 
 from __future__ import annotations
 
