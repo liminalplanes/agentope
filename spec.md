@@ -142,9 +142,11 @@ every time.
 
 ## 5. Evidence levels
 
-The tool assigns each decision a propensity source, then evaluates at the
-**lowest level present** among the included decisions. It never silently
-mixes levels. `--level` filters to one level.
+The tool assigns each decision a propensity source and evaluates at one
+level; it never mixes levels. By default it picks the strongest level the data
+supports: Level 1 if any decision has a logged propensity (evaluating only
+those decisions, and saying how many were excluded), otherwise Level 3 (behind
+its guard). `--level` chooses explicitly.
 
 ### 5.1 Level 1 — Logged
 
@@ -231,7 +233,7 @@ No logged or sampled propensities. A model of the logging policy,
 `accept_unverifiable=True` (Python). The refusal message lists assumption 1
 in plain words.
 
-**Sensitivity analysis (v0.3):** reports the **break-even Γ**, the smallest
+**Sensitivity analysis (v0.4):** reports the **break-even Γ**, the smallest
 amount of unmeasured confounding (in the marginal sensitivity model) that
 would erase the estimated improvement. "The improvement holds unless hidden
 factors shift the logging odds by more than 1.8×" is something people can act on.
@@ -305,6 +307,15 @@ Unknown fields are ignored, for forward compatibility.
 | `join_key` | ✓ | key for joining outcomes |
 | `input_ref` | | path or URI of the stored input; needed for L2 and LLM targets |
 | `logging_config` | | model id and sampling parameters; needed for L2 |
+| `safe_candidates` | | explored decisions: the pool exploration drew from uniformly (written by `explore`) |
+| `logging_probs` | | full logging distribution over candidates (written by `randomize`); makes the support check exact |
+| `action_map` | | the action map that produced `chosen` (written by `import`); used for the report |
+| `candidates_source` | | where `candidates` came from; `inferred` adds an assumption to the report |
+| `input_sha256` | | hash of the stored input (written by `import`), for replay checks |
+
+`t` is unix seconds or an ISO 8601 timestamp **with** a timezone; naive
+timestamps are rejected rather than guessed. A `propensity` without a
+`propensity_source` is treated as logged.
 
 ### 6.2 Outcomes and the join
 
@@ -323,6 +334,12 @@ CSV with the same columns is also accepted. The join rule:
 a purchase have very different horizons. `--default-reward` defaults to `0`,
 and the share of expired decisions is shown prominently, because a high share
 means the evaluation is mostly measuring the default.
+
+Some systems record an outcome only when something happens (a purchase, a
+resolved ticket), so absence *is* the outcome. `--absent-means-default`
+(`absent_means_default=True`) says so: the expired-share verdict rules (§8)
+no longer apply, the share is still reported, and the report states the
+assumption that a missing outcome really was the default.
 
 When several decisions share a `join_key` (several turns in one
 conversation), each gets the same outcome. The report flags this, because
@@ -358,6 +375,12 @@ agentope sample decisions.jsonl --n 32 --target target.yaml -o samples.jsonl
 agentope eval decisions.jsonl --outcomes outcomes.csv --horizon 7d \
               --target target.yaml        # or target.jsonl
 ```
+
+`eval` also takes `--absent-means-default` (§6.2), `--level`,
+`--accept-unverifiable`, `--decision-point` (required when a file covers several),
+`--seed`, `--bootstrap`, `--folds`, `--json` and `-o report.json`. A Python
+callable target is given as `--target module:function` or
+`--target path/to/file.py:function`.
 
 For the common case, steps 2–4 collapse to one command:
 
@@ -431,6 +454,19 @@ choice = ao.explore("tool_choice", llm_choice=tool_name,
 are safe to take at random is the user's responsibility, and the docs say so
 plainly.
 
+`log` is a path, a file object or a callable receiving the record. To keep
+exploration data in existing traces instead of a separate file, write it onto
+the model span; `import` reads it back (§11):
+
+```python
+ao.explore(..., log=lambda record: span.set_attributes(ao.span_attributes(record)))
+```
+
+This sets `agentope.chosen`, `agentope.explored`, `agentope.propensity`,
+`agentope.candidates`, `agentope.safe_candidates`, `agentope.epsilon`,
+`agentope.llm_choice` and `agentope.decision_id` (and `agentope.logging_probs`
+for `randomize`).
+
 ---
 
 ## 8. Estimators and diagnostics
@@ -461,6 +497,23 @@ silently. The verdict reports problems instead of hiding them.
 |---|---|
 | `unreliable` | any support violation carrying more than 1% of target mass, or ESS < 50, or more than 50% expired |
 | `weak` | L3 or L4, or ESS < 10% of n, or more than 20% expired, or L2 reproduction rate < 50% |
+
+The expired rules are skipped with `--absent-means-default` (§6.2).
+
+**Baseline.** The logging policy's realized mean is taken over *all* decisions
+at the decision point, also when only some are included in the estimate (e.g.
+only explored rounds at Level 1): the mean of explored rounds alone measures
+the uniform explorer, not the policy that ran.
+
+**Support check.** Exact when the full logging distribution is known
+(`logging_probs`, or uniform over `safe_candidates` for explored decisions).
+Otherwise, actions never chosen anywhere in the logs count as unsupported; the
+report says which check was used.
+
+**Interval.** Percentile bootstrap of SNIPS minus the logging mean, resampling
+whole join keys (decisions that share an outcome move together); 2000
+resamples, seed 0 by default. At Level 3 the estimated propensities are
+treated as fixed.
 | `ok` | otherwise |
 
 An `unreliable` result still shows the numbers, but the headline reads
@@ -523,19 +576,33 @@ tool_choice · 4,812 decisions found in traces
 
 ## 11. Importing traces
 
-v0.3 supports OTLP JSON exports using the **OpenTelemetry GenAI** conventions
-(`gen_ai.*`) or **OpenInference**. Langfuse and Phoenix exports go through
-the same path.
+v0.2 supports OTLP JSON exports using the **OpenTelemetry GenAI** conventions
+(`gen_ai.*`) or **OpenInference**: the Collector's file-exporter format (one
+request per line) or a single JSON document, optionally gzipped. Langfuse and
+Phoenix exports go through the same path.
+
+```sh
+agentope import --traces traces.otlp.json.gz \
+    --context intent=app.intent,tier=app.customer_tier -o decisions.jsonl
+```
 
 | Decision field | Source in the trace |
 |---|---|
-| decision | a model (chat) span whose response contains tool calls, or none (`__none__`) |
-| `chosen` | tool name(s) in the response, after the action map |
-| `candidates` | tool definitions on the request, when recorded; else the union seen in the data (flagged) |
-| `t`, `join_key` | span start time; trace or session id (configurable) |
-| `input_ref` | input messages, **only if content capture was enabled** |
-| `logging_config` | request model, response model, temperature |
-| `context` | user-specified attribute extraction (`--context intent=attr.path,…`) |
+| decision | a model span (`gen_ai.operation.name` = `chat` / `text_completion` / `generate_content`, or OpenInference kind `LLM`). By default only the **first model call of each agent run** (nearest `invoke_agent` / `AGENT` ancestor, else the trace); `--decisions all` takes every call and adds an `llm_call_index` context feature |
+| `chosen` | in order: an `agentope.chosen` attribute; the `execute_tool` / `TOOL` spans that follow the model span (children, or siblings before the next model call), whenever the export has tool spans at all; tool calls in the response content (`gen_ai.output.messages`, `llm.output_messages.*`); the finish reason, which can only say "no tool call". Then the action map. Spans where none of these settle it are skipped and counted |
+| `candidates` | `agentope.candidates`; else tool definitions on the request (`gen_ai.tool.definitions`, `llm.tools.*`) plus `__none__`; else the union seen in the data (`candidates_source = inferred`, printed as an assumption) |
+| `t` | span start time |
+| `join_key` | `--join-key <attribute>`; default `gen_ai.conversation.id`, then `session.id`, then the trace id |
+| `context` | `--context name=attribute,…`, looked up on the model span, then its ancestors, then the resource |
+| propensities | `agentope.explored`, `agentope.propensity`, `agentope.safe_candidates`, `agentope.logging_probs` (§7.3) |
+| `logging_config` | request model, response model, temperature, top_p, max_tokens |
+| `input_ref` | **only if content capture was enabled**: the input messages, system instructions and tool definitions, written as an OpenAI-compatible chat-completions request body to `inputs/<decision_id>.json` (path relative to the decisions file) |
+
+`import` prints a summary: decisions per point, how `chosen` was found,
+where candidates came from, propensities, context features (and how often each
+was missing), stored inputs and which levels that allows, and warnings
+(parallel tool calls → consider `toolset`, tool requests that never ran,
+skipped spans).
 
 Known limits: GenAI conventions are still in *Development* status, and
 attribute names differ between instrumentations. Content capture is usually
@@ -559,9 +626,9 @@ front.
 | Version | Scope |
 |---|---|
 | **v0.1** | `decisions.jsonl` + outcomes join; L1 and L3 with guard; SNIPS/IPS; diagnostics, verdicts, report; Python callable and `target.jsonl` targets; `randomize` / `explore` helpers |
-| **v0.2** | L2: `sample` with an OpenAI-compatible endpoint, caching, cost estimates; LLM target policies; `check` |
-| **v0.3** | OTLP import (GenAI + OpenInference); DR; L3 break-even Γ |
-| **v0.4** | L4 with calibration display |
+| **v0.2** | OTLP import (GenAI + OpenInference), `eval --traces`, `agentope.*` span attributes; `--absent-means-default` |
+| **v0.3** | L2: `sample` with an OpenAI-compatible endpoint, caching, cost estimates; LLM target policies; `check` |
+| **v0.4** | DR; L3 break-even Γ; L4 with calibration display |
 
 ---
 

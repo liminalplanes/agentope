@@ -170,4 +170,33 @@ def explore(
     return chosen
 
 
-__all__ = ["explore", "randomize"]
+def span_attributes(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Flatten a record from :func:`explore` / :func:`randomize` into OpenTelemetry span
+    attributes (``agentope.*``), which :func:`agentope.import_traces` reads back.
+
+    Use it as the log target to keep exploration data in your traces::
+
+        ao.explore(..., log=lambda r: span.set_attributes(ao.span_attributes(r)))
+    """
+    out: dict[str, Any] = {}
+    for key in (
+        "decision_id",
+        "decision_point",
+        "chosen",
+        "explored",
+        "propensity",
+        "epsilon",
+        "llm_choice",
+    ):
+        value = record.get(key)
+        if value is not None:
+            out[f"agentope.{key}"] = value
+    for key in ("candidates", "safe_candidates"):
+        if record.get(key):
+            out[f"agentope.{key}"] = list(record[key])
+    if record.get("logging_probs") is not None:
+        out["agentope.logging_probs"] = json.dumps(record["logging_probs"], sort_keys=True)
+    return out
+
+
+__all__ = ["explore", "randomize", "span_attributes"]

@@ -69,12 +69,17 @@ def render(r: Report) -> str:
 
     level = f"L{r.level} {LEVEL_NAMES[r.level]}"
     _row(lines, "Evidence level", f" {level} ({r.level_detail})" if r.level_detail else f" {level}")
-    _row(
-        lines,
-        "Decisions",
-        f" {n:,}   (rewarded {diag['rewarded']:,} · expired {diag['expired']:,} · "
-        f"{diag['expired_share']:.1%})",
-    )
+    if diag.get("absent_means_default"):
+        outcome_text = (
+            f"(outcome recorded {diag['rewarded']:,} · none recorded {diag['expired']:,} "
+            f"→ default · {diag['expired_share']:.1%})"
+        )
+    else:
+        outcome_text = (
+            f"(rewarded {diag['rewarded']:,} · expired {diag['expired']:,} · "
+            f"{diag['expired_share']:.1%})"
+        )
+    _row(lines, "Decisions", f" {n:,}   {outcome_text}")
     if diag["n_excluded"]:
         _row(lines, "", f" {diag['n_excluded']:,} without logged propensities excluded")
     if diag["unmatched_outcomes"]:

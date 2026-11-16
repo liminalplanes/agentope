@@ -181,7 +181,7 @@
   <thead><tr><th>Level</th><th>Where the probabilities come from</th><th>Trust</th><th>Status</th></tr></thead>
   <tbody>
     <tr><td><b>1 · Logged</b></td><td>Recorded when deciding, because the system randomized a little (<code>explore</code> / <code>randomize</code>).</td><td>Strongest</td><td><span class="tag">available</span></td></tr>
-    <tr><td><b>2 · Sampled</b></td><td>The logging LLM is re-run on stored inputs and its choices are counted.</td><td>Good, if inputs are complete</td><td><span class="tag">v0.2</span></td></tr>
+    <tr><td><b>2 · Sampled</b></td><td>The logging LLM is re-run on stored inputs and its choices are counted.</td><td>Good, if inputs are complete</td><td><span class="tag">v0.3</span></td></tr>
     <tr><td><b>3 · Estimated</b></td><td>Modeled from the context you logged.</td><td>Weak: assumes nothing important is missing from context</td><td><span class="tag">available</span></td></tr>
     <tr><td><b>4 · Modeled</b></td><td>No probabilities; an outcome model only.</td><td>Weakest</td><td><span class="tag">v0.4</span></td></tr>
   </tbody>
@@ -215,7 +215,7 @@ tool = ao.explore(
   </li>
   <li>
     <h3>Record outcomes</h3>
-    <p>One row per outcome, with the same join key and a timestamp (unix seconds or ISO 8601 with a timezone). Record failures too, as <code>0</code>.</p>
+    <p>One row per outcome, with the same join key and a timestamp (unix seconds or ISO 8601 with a timezone). Record failures too, as <code>0</code>, or, if your system only ever records successes, pass <code>--absent-means-default</code> when evaluating.</p>
     <pre><code>join_key,t,value
 conv-8812,1763283600,1
 conv-8813,1763283900,0</code></pre>
@@ -251,7 +251,14 @@ Verdict          ok</code></pre>
 <p>A customer-support agent runs an open model (<code>qwen2.5-7b-instruct</code> on vLLM) and is traced with OpenTelemetry. For each conversation, the model decides whether to search the knowledge base, look up the order, escalate to a human, or answer directly. The helpdesk records whether each ticket was resolved. The team wants to know: <em>should the agent always look up the order when the customer gives an order number?</em></p>
 
 <h3>The trace</h3>
-<p>One trace per conversation, exported from the OpenTelemetry Collector. Content capture is off, so there are <strong>no prompts and no message text</strong>, only span attributes. The agent's tool choice is wrapped in <code>agentope.explore</code> (ε = 0.2, never escalating at random), which records its coin flip as <code>agentope.*</code> attributes on the span.</p>
+<p>One trace per conversation, exported from the OpenTelemetry Collector. Content capture is off, so there are <strong>no prompts and no message text</strong>, only span attributes. The agent's tool choice is wrapped in <code>agentope.explore</code> (ε = 0.2, never escalating at random), which records its coin flip as <code>agentope.*</code> attributes on the model span:</p>
+<pre><code>tool = ao.explore(
+    "tool_choice", llm_choice=tool_name,
+    safe_candidates=["search_kb", "lookup_order", "__none__"],
+    candidates=["search_kb", "lookup_order", "escalate_to_human", "__none__"],
+    epsilon=0.2, join_key=conversation_id,
+    log=lambda record: span.set_attributes(ao.span_attributes(record)),
+)</code></pre>
 <div class="tree"><span class="span">invoke_agent support-agent</span>   <span class="dim">gen_ai.conversation.id=conv-48213</span>
 │   app.intent=refund · app.has_order_number=true · app.customer_tier=pro
 ├─ <span class="span">chat qwen2.5-7b-instruct</span>  <span class="dim">← the decision</span>
@@ -336,7 +343,8 @@ This estimate assumes:
   • Which tool is called matters, not its arguments or wording (action map: tool)
   • Only tool_choice changes; later steps behave as they did under the logging policy
   • An outcome missing within 3d means outcome = 0</code></pre>
-<p style="margin-top:10px"><strong>Reading it:</strong> looking up the order whenever there is an order number would have resolved about 8.8 percentage points more tickets, and the interval stays clearly above zero. The estimate uses only the 1,012 explored conversations, but it is compared against how all 5,000 actually went.</p>
+<p style="margin-top:10px">Steps 1 and 4 also run as one command: <code>agentope eval --traces traces.otlp.json.gz --context … --outcomes helpdesk.csv --horizon 3d --target …</code>.</p>
+<p><strong>Reading it:</strong> looking up the order whenever there is an order number would have resolved about 8.8 percentage points more tickets, and the interval stays clearly above zero. The estimate uses only the 1,012 explored conversations, but it is compared against how all 5,000 actually went.</p>
 
 <h3>5 · A policy the data can't judge</h3>
 <p>The second policy escalates every pro customer. Escalation was never explored (it isn't a safe candidate), so the logs say nothing about how a random escalation would have gone:</p>
@@ -365,7 +373,8 @@ Verdict          unreliable
   <li><b>"refused"</b>: there are no logged probabilities, so it would need Level 3. Add <code>--accept-unverifiable</code> if you accept that context captures everything that mattered, or start logging with <code>explore</code>.</li>
   <li><b>Support violations</b>: the target picks options your logs never take (e.g. outside <code>safe_candidates</code>). Nothing in the data can say how those would have gone.</li>
   <li><b>Low effective sample size</b>: the target differs a lot from what was logged. Collect more explored decisions or raise ε.</li>
-  <li><b>Many expired decisions</b>: outcomes are missing within the horizon. Check the join key, the horizon, and that failures are recorded.</li>
+  <li><b>Many expired decisions</b>: outcomes are missing within the horizon. Check the join key, the horizon, and that failures are recorded. If only successes are ever recorded, use <code>--absent-means-default</code>.</li>
+  <li><b>"skipped" in the import summary</b>: for some model calls the trace can't tell which tool ran. Instrument tool execution (<code>execute_tool</code> spans) or log with <code>ao.span_attributes</code>.</li>
 </ul>
 
 <footer>

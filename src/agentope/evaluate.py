@@ -82,7 +82,8 @@ def evaluate(
     level: int | None = None,
     accept_unverifiable: bool = False,
     default_reward: float = 0.0,
-    action_map: str = "tool",
+    absent_means_default: bool = False,
+    action_map: str | None = None,
     decision_point: str | None = None,
     seed: int = 0,
     n_bootstrap: int = 2000,
@@ -99,6 +100,11 @@ def evaluate(
     level: 1 (Logged) or 3 (Estimated). By default, Level 1 if any decision has a
         logged propensity (only those decisions are evaluated), otherwise Level 3.
     accept_unverifiable: required for Level 3.
+    absent_means_default: a decision with no outcome within the horizon really had
+        outcome ``default_reward`` (e.g. only successes are recorded). Turns off the
+        expired-share verdict rules; the share is still reported.
+    action_map: the action map that produced ``chosen``, for the report. By default,
+        the one recorded by trace import, else "tool".
 
     Raises RefusedError when a guard fires and DataError for invalid input.
     """
@@ -117,7 +123,7 @@ def evaluate(
     if level in (2, 4):
         raise DataError(
             f"Level {level} is not available in agentope {__version__} "
-            "(Level 2 arrives in v0.2, Level 4 in v0.4)"
+            "(Level 2 arrives in v0.3, Level 4 in v0.4)"
         )
     horizon_s = parse_duration(horizon)
     thresholds = thresholds or VerdictThresholds()
@@ -126,6 +132,7 @@ def evaluate(
     for src in (decisions, outcomes):
         if is_path(src):
             files[str(src)] = sha256_file(src)  # type: ignore[arg-type]
+    files.update(getattr(decisions, "source_files", None) or {})
 
     all_decisions = load_decisions(decisions)
     if not all_decisions:
@@ -141,6 +148,9 @@ def evaluate(
     ds = [d for d in all_decisions if d.decision_point == decision_point]
     if not ds:
         raise DataError(f"no decisions for decision point {decision_point!r}")
+    if action_map is None:
+        recorded = {d.action_map for d in ds if d.action_map}
+        action_map = recorded.pop() if len(recorded) == 1 else "tool"
 
     tgt = resolve_target(target)
     files.update(tgt.files)
@@ -252,7 +262,10 @@ def evaluate(
             "calibration_error": model.calibration_error,
         }
 
-    verdict, reasons = assess(level, diagnostics, v_snips is not None, thresholds)
+    diagnostics["absent_means_default"] = absent_means_default
+    verdict, reasons = assess(
+        level, diagnostics, v_snips is not None, thresholds, absent_means_default
+    )
 
     # Level label
     if level == 1:
@@ -330,9 +343,20 @@ def evaluate(
     assumptions.append(
         f"Only {decision_point} changes; later steps behave as they did under the logging policy"
     )
-    assumptions.append(
-        f"An outcome missing within {horizon_label} means outcome = {float(default_reward):g}"
-    )
+    if absent_means_default:
+        assumptions.append(
+            f"No outcome within {horizon_label} means the outcome really was "
+            f"{float(default_reward):g} (absence is recorded as the outcome)"
+        )
+    else:
+        assumptions.append(
+            f"An outcome missing within {horizon_label} means outcome = {float(default_reward):g}"
+        )
+    if any(d.candidates_source == "inferred" for d in included):
+        assumptions.append(
+            "Candidates were inferred from the actions seen in the logs: no other action "
+            "was available"
+        )
     if shared:
         assumptions.append(
             "Each decision gets the full outcome of its join key, also when other decisions "
@@ -358,10 +382,11 @@ def evaluate(
         and (ess < thresholds.unreliable_min_ess or ess / n < thresholds.weak_ess_share)
     ):
         improve.append("Collect more explored decisions, or raise ε")
-    if diagnostics["expired_share"] > thresholds.weak_expired_share:
+    if not absent_means_default and diagnostics["expired_share"] > thresholds.weak_expired_share:
         improve.append(
             f"{diagnostics['expired_share']:.1%} of decisions expired: check the outcome join "
-            f"and whether --horizon {horizon_label} is long enough"
+            f"and whether --horizon {horizon_label} is long enough. If only some outcomes "
+            "are ever recorded (e.g. successes), use --absent-means-default"
         )
     if undefined:
         warnings.append(
@@ -384,6 +409,7 @@ def evaluate(
         "folds": folds if level == 3 else None,
         "horizon_seconds": horizon_s,
         "default_reward": float(default_reward),
+        "absent_means_default": absent_means_default,
         "action_map": action_map,
     }
     return Report(

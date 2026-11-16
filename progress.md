@@ -1,42 +1,40 @@
 # agentope: implementation progress
 
-Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers (§) refer to the spec.
+Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer to the spec.
 
 **Legend:** `[ ]` not started · `[~]` in progress / partial · `[x]` done
 
-**Status (2026-11-16):** v0.1 implemented (Levels 1 and 3, `eval`, logging helpers), 39 tests passing. `index.html` explains the system and has a guide (see §6: its trace example describes features not built yet). Next: settle the v0.2 spec gaps (§0), then Level 2 sampling.
+**Status (2026-11-16):** v0.2 implemented: trace import (OTLP JSON, GenAI + OpenInference), `eval --traces`, `agentope.*` span attributes, `--absent-means-default`, on top of v0.1 (Levels 1 and 3, `eval`, logging helpers). 52 tests passing. Milestones were reordered at the owner's request: import moved to v0.2, Level 2 sampling to v0.3, DR / Γ / Level 4 to v0.4. Next: Level 2 sampling (§3).
 
 ---
 
 ## 0. Spec work
 
-### 0.1 Gaps that block implementation
+### 0.1 Open questions that block upcoming work
 
-- [ ] **`samples.jsonl` schema** (§5.2, §12). The spec lists what it records but gives no field layout. Define it: decision id, model id, parameters, N, raw action counts, input hash. *Blocks v0.2.*
-- [x] **Partial target probabilities.** Missing candidates mean probability 0. Probabilities on non-candidates are an error. The sum must be within 1e-6 of 1; nothing is renormalized.
-- [x] **Python callable targets from the CLI.** `--target module:function` or `--target path/to/file.py:function`.
-- [x] **How the difference CI is computed** (§8). Percentile bootstrap of (SNIPS − logging mean), resampling whole join keys; 2000 resamples, seed 0 by default.
-- [ ] **YAML parsing.** Dependencies are now allowed, so PyYAML can simply be a dependency (or part of `[llm]`). Decide when building v0.2.
-- [ ] **`check` arrives too late.** Goal 1 promises a readiness report "on existing traces", but `check` is v0.2 and trace import is v0.3. Either let `check` run on `decisions.jsonl` in v0.2, or move a minimal importer earlier.
+- [ ] **`samples.jsonl` schema** (§5.2, §12). Define the field layout: decision id, model id, parameters, N, raw action counts, input hash. *Blocks v0.3.*
+- [ ] **YAML for `target.yaml`.** Dependencies are allowed, so PyYAML can be a dependency (or part of `[llm]`). Decide when building v0.3.
+- [ ] **`check` timing.** Goal 1 promises a readiness report on existing traces. Import now exists, so `check` can run on traces in v0.3 without sampling.
 
-### 0.2 Spec issues found while implementing v0.1
+### 0.2 Spec issues found while implementing (all resolved in `spec.md`)
 
-- [ ] **The expired rule punishes success-only outcome logs.** Many systems record an outcome only when something good happens (a purchase, a resolved ticket). Then every failure counts as "expired", and the >50%-expired rule marks the result `unreliable`, although "no outcome = 0" is exactly right for that data. Proposal: an option such as `--absent-means-default` that says absence is the outcome, which turns off the expired-share verdict rules but keeps the share in the report.
-- [ ] **Write into §3/§9: the logging baseline uses all decisions.** When only some decisions are included (e.g. only explored rounds at Level 1), the logging policy's realized mean is still taken over *all* decisions at the decision point. Using the explored rounds only would measure the uniform explorer, not the running policy, and inflate the difference. Implemented this way; the spec should say so.
-- [ ] **Level selection wording (§1 vs §5).** §1 says "picks the strongest level the data supports"; §5 says "evaluates at the lowest level present". Implemented: Level 1 if any decision has a logged propensity (evaluating only those, with a warning and, unless all are explored, a "representative" assumption), otherwise Level 3. Update §5 to match.
-- [ ] **Add the new optional fields to §6.1:** `safe_candidates` (pool used by exploration), `logging_probs` (full logging distribution, makes support checks exact), plus `llm_choice` and `epsilon` written by `explore`.
-- [ ] **Support checks without a full logging distribution.** With only `propensity` recorded, zero-probability actions can't be known. Implemented proxy: actions never chosen in the logs. The report says which check was used. Put this in §8.
-- [ ] **Timestamps.** Implemented: unix seconds or ISO 8601 *with* a timezone; naive timestamps are rejected. Put this in §6.
+- [x] **Success-only outcome logs.** Added `--absent-means-default` (§6.2, §8), chosen by the owner.
+- [x] **Logging baseline uses all decisions** at the decision point, also when only explored rounds are included (§8).
+- [x] **Level selection wording** (§5): strongest level the data supports; never mixed.
+- [x] **New optional fields** in §6.1: `safe_candidates`, `logging_probs`, `action_map`, `candidates_source`, `input_sha256`.
+- [x] **Support checks** without a full logging distribution use "actions chosen in the logs" (§8).
+- [x] **Timestamps:** unix seconds or ISO 8601 with a timezone (§6.1).
+- [x] **Interval** details: cluster bootstrap by join key (§8).
 - [ ] **Determinism (§12).** With numpy/scipy, reports are bit-reproducible for the same inputs, seed and library versions on the same platform; across machines, BLAS differences may change the last digits at Level 3. Say so in §12.
 
 ### 0.3 Follow-ups for users with thin traces
 
-- [ ] Add a "What you can evaluate with what you have" section: content, attributes only, or neither, mapped to levels and target types.
+- [ ] Add a "What you can evaluate with what you have" section to the spec: content, attributes only, or neither, mapped to levels and target types.
 - [ ] State plainly in §1, §4.4 and `check` that LLM targets (prompt or model changes) need stored inputs at every level.
-- [ ] §11: when response content is missing, find `chosen` from `execute_tool` spans (`gen_ai.tool.name`), and infer `__none__` when a chat span has no tool-execution children.
-- [ ] §5.5 / §9: list "candidates inferred from the data" as a printed assumption whenever it applies.
+- [x] §11: when response content is missing, `chosen` comes from `execute_tool` spans; `__none__` when a model span has no tool execution after it.
+- [x] §5.5 / §9: "candidates inferred from the data" is printed as an assumption.
 - [~] §8: empty or near-empty `context` at Level 3. *Done:* a warning when context has no usable features. *Open:* whether this should force `unreliable`.
-- [ ] §7.3: `explore` and `randomize` can also write span attributes (`agentope.propensity`, `agentope.explored`, `agentope.candidates`, `agentope.safe_candidates`), so Level 1 data arrives in existing traces. *`index.html` already shows this in its trace example.*
+- [x] §7.3: `explore` / `randomize` can write span attributes via `ao.span_attributes`, read back by import.
 - [ ] Notes for self-hosted open-weight models: pin weights and serving config, and warn that output can vary with batch size (vLLM and similar), which affects replay fidelity.
 - [ ] `check`: say which action maps are available when there is no content (`tool` and `toolset` only).
 
@@ -45,135 +43,82 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 ## 1. Project setup
 
 - [ ] Confirm the name is free on PyPI (§14 Q5).
-- [x] `pyproject.toml` via uv: package `agentope` (src layout, `uv_build`), Python ≥ 3.14, depends on numpy and scipy, console script `agentope`. *Not yet:* the `[llm]` extra (v0.2).
-- [x] Layout: `src/agentope/{io,decisions,outcomes,targets,propensity_model,estimators,verdict,report,evaluate,helpers,cli}.py`.
-- [~] Dev tooling: pytest and ruff (`uv run pytest`, `uv run ruff check`). *Open:* type checking, CI.
-- [x] `argparse` CLI with exit codes `0` report produced, `1` refused, `2` usage error (§7.1).
+- [x] `pyproject.toml` via uv: package `agentope` 0.2.0 (src layout, `uv_build`), Python ≥ 3.14, numpy and scipy, console script `agentope`. *Not yet:* the `[llm]` extra (v0.3).
+- [x] Layout: `src/agentope/{io,decisions,outcomes,targets,propensity_model,estimators,verdict,report,evaluate,helpers,traces,action_maps,importer,cli}.py`.
+- [~] Dev tooling: pytest and ruff. *Open:* type checking, CI.
+- [x] `argparse` CLI with exit codes `0` / `1` refused / `2` usage error.
 
 ---
 
-## 2. v0.1: core evaluation (Levels 1 and 3)
+## 2. v0.1: core evaluation (Levels 1 and 3) — done
 
-### 2.1 Input
-
-- [x] JSONL reader: gzip detected from magic bytes; unknown fields ignored; errors carry `file:line`.
-- [x] `Decision` model and validation (required fields, `chosen ∈ candidates`, flat context, unique ids). Several decision points in one file need `--decision-point`.
-- [x] Outcomes reader for JSONL and CSV (detected by content).
-- [x] Horizon parser (`7d`, `12h`, `30m`, `90s`, or seconds).
-- [x] `target.jsonl` reader with validation. `q_hat` is accepted but unused until DR (v0.3).
-- [x] Python callable target wrapper `(context, candidates) -> probs`.
-
-### 2.2 Outcome join (§6.2)
-
-- [x] First outcome in `[t, t + horizon)`, ties by input order; `default_reward` otherwise.
-- [x] `rewarded` / `expired` / `unmatched` counts; shared join keys flagged and listed as an assumption.
-- [x] `--horizon` required.
-
-### 2.3 Propensities
-
-- [x] **Level 1, logged** and **explored** (propensity `1/k` over `safe_candidates`; only explored rounds used).
-- [x] **Level 3, estimated:** conditional multinomial logit (numpy/scipy, L-BFGS), one-hot / 0-1 / standardized / null-indicator features, L2 penalty, 5-fold cross-fitting grouped by join key, log loss vs. a context-free baseline, calibration error.
-- [x] Level selection and `--level`; Levels 2 and 4 give a clear "not available yet" error.
-- [x] Level 3 guard (`--accept-unverifiable` / `accept_unverifiable=True`), refusal explains the assumption.
-
-### 2.4 Estimators (§8)
-
-- [x] IPS and SNIPS, no clipping.
-- [x] Logging policy realized mean (over all decisions at the point, see §0.2).
-- [x] Seeded cluster bootstrap CI for the difference (vectorized).
-
-### 2.5 Diagnostics and verdict (§8)
-
-- [x] n, rewarded/expired/unmatched, ESS and ESS/n, max weight, min propensity, support violations with target mass and the kind of check used.
-- [x] Verdict rules with configurable `VerdictThresholds`; `unreliable` headline reads "no trustworthy estimate".
-
-### 2.6 Report (§9)
-
-- [x] Text renderer in the §9 layout, plus warnings.
-- [x] `report.to_json()` with `level`, `estimates`, `diagnostics`, `verdict`, `verdict_reasons`, `assumptions`, `how_to_improve`, `warnings`, `inputs`.
-- [x] Assumptions built from level, action map (`--map`, used for the report only until import exists), horizon, default reward and shared keys.
-- [x] `how_to_improve` hints, including the ε-exploration time needed to reach Level 1 at the observed traffic rate.
-- [x] `inputs`: SHA-256 of each input file (decisions, outcomes, target file), version, seed and settings.
-
-### 2.7 Logging helpers (§7.3)
-
-- [x] `ao.randomize(...)` records `propensity` and full `logging_probs`.
-- [x] `ao.explore(...)` never draws outside `safe_candidates`; records `explored`, `safe_candidates`, `llm_choice`, `epsilon`.
-- [x] Logs to a path, a file object or a callable; thread-safe; injectable RNG.
-
-### 2.8 Interfaces
-
-- [x] Python API `ao.evaluate(...)`.
-- [x] CLI `agentope eval` with `--outcomes`, `--horizon`, `--target`, `--decision-point`, `--level`, `--accept-unverifiable`, `--default-reward`, `--map`, `--seed`, `--bootstrap`, `--folds`, `--json`, `-o`.
-
-### 2.9 Tests
-
-- [x] Simulation harness with exact ground truth (`tests/sim.py`).
-- [x] Level 1 (logged and explored) and Level 3 recover the true difference.
-- [x] CI coverage over 120 simulated datasets is within [88%, 99.5%].
-- [x] Determinism: identical JSON across runs.
-- [x] Join edge cases, validation errors, guards, support violations, never-agreeing targets, exit codes.
-- [x] Golden text report (`tests/golden/`, regenerate with `UPDATE_GOLDEN=1`).
+- [x] **Input:** JSONL reader (gzip by content, unknown fields ignored, `file:line` errors); `Decision` validation; outcomes as JSONL or CSV; horizon parser; `target.jsonl`; Python callable targets.
+- [x] **Outcome join:** first outcome in `[t, t + horizon)`; `default_reward`; rewarded / expired / unmatched counts; shared join keys flagged.
+- [x] **Propensities:** Level 1 logged and explored; Level 3 conditional logit (numpy/scipy, L-BFGS), cross-fitted by join key, with log loss vs. a context-free baseline and calibration error; Level 3 guard.
+- [x] **Estimators:** IPS, SNIPS, no clipping; logging baseline over all decisions; vectorized cluster bootstrap.
+- [x] **Diagnostics and verdict:** ESS, max weight, min propensity, support violations (and which check), configurable thresholds.
+- [x] **Report:** text in the §9 layout and JSON; assumptions, warnings, `how_to_improve` (incl. ε-exploration time), input hashes.
+- [x] **Helpers:** `randomize`, `explore` (never outside `safe_candidates`); log to path, file object or callable.
+- [x] **Tests:** simulation with exact ground truth, recovery at both levels, CI coverage, determinism, edge cases, golden report.
 - [ ] Performance regression test. (Measured 2026-11-16: 100k decisions in ~1.6 s at Level 1, ~2.3 s at Level 3.)
 
 ---
 
-## 3. v0.2: sampling (Level 2) and `check`
+## 3. v0.2: trace import — done
+
+- [x] OTLP JSON reader: Collector file-exporter lines or one document, optionally gzipped; typed attribute values; parent/child links; duplicate spans dropped.
+- [x] Span kinds for OpenTelemetry GenAI (`gen_ai.operation.name`) and OpenInference (`openinference.span.kind`).
+- [x] Decision selection: first model call per agent run (default) or every call (`--decisions all`, adds `llm_call_index`).
+- [x] `chosen`: `agentope.chosen` → tool spans after the model span → response content → finish reason; undecidable spans skipped and counted; tool requests that never ran become `__none__` and are counted.
+- [x] Candidates: `agentope.candidates` → tool definitions (+ `__none__`) → inferred (flagged, printed as an assumption).
+- [x] `--context name=attribute,…` looked up on span, ancestors, resource; missing values counted.
+- [x] Join key: `--join-key`, else `gen_ai.conversation.id`, `session.id`, trace id.
+- [x] `logging_config` from request/response model, temperature, top_p, max_tokens (incl. OpenInference `llm.invocation_parameters`).
+- [x] Stored inputs (content capture on): chat-completions request body (system instructions, messages incl. tool calls and tool results, tool definitions, sampling parameters) in `inputs/`, plus `input_sha256`.
+- [x] Action maps: `tool`, `toolset`, `tool+args:<fields>`, custom `module:function`; parallel calls counted with a `toolset` hint.
+- [x] `agentope import` with the summary shown in `index.html`; `agentope eval --traces` (summary on stderr); `ao.import_traces()`.
+- [x] `ao.span_attributes()` for `explore` / `randomize`; round trip tested.
+- [x] `--absent-means-default` / `absent_means_default=True`.
+- [x] Tests: import → eval gives the same estimates as evaluating the decisions directly (explore, logged and unlogged data); GenAI with content; OpenInference; first vs. all; parallel calls; skips; context lookup; CLI.
+- [ ] Test against real Langfuse and Phoenix exports (need sample files).
+- [ ] Older GenAI conventions that put content in span *events* (`gen_ai.choice`, `gen_ai.user.message`) instead of attributes: not read yet.
+- [ ] Other OpenInference input forms (multimodal parts beyond text, `input.value` JSON) are only partly converted to stored inputs.
+
+---
+
+## 4. v0.3: sampling (Level 2) and `check`
 
 - [ ] Write the `samples.jsonl` format (from §0.1).
-- [ ] Stored-input loader (`input_ref` as a path; URIs later) and an input-hash check against the trace (§5.2 assumption 1).
-- [ ] OpenAI-compatible client under `[llm]`:
-  - `base_url` and key from env
-  - concurrency limit, retries with backoff, rate-limit handling
-  - test against vLLM / Ollama / llama.cpp as well as hosted APIs
-- [ ] `agentope sample`: N samples per decision, action map applied to each, results cached, resumable after interruption.
+- [ ] Stored-input loader (`input_ref` relative to the decisions file) and an `input_sha256` check.
+- [ ] OpenAI-compatible client under `[llm]`: `base_url` and key from env; concurrency limit, retries with backoff, rate-limit handling. Tests use a local mock server (owner's choice).
+- [ ] `agentope sample`: N samples per decision, action map applied to each sampled response, results cached, resumable after interruption.
 - [ ] `p̂ = (count + α) / (N + α·k)`, default α = 0.5 (§5.2).
 - [ ] Replay-fidelity diagnostics: pinned model id must match; reproduction rate of the logged choice; decisions where the chosen action appeared < 3 times.
 - [ ] Detect deterministic logging (temperature 0, or all samples identical): report the lack of overlap instead of an estimate.
 - [ ] Verdict rule: a reproduction rate < 50% gives `weak`.
-- [ ] Load `target.yaml`: model, system prompt replacement, temperature, tools (`unchanged` or a path).
+- [ ] `target.yaml`: model, system prompt replacement, temperature, tools (`unchanged` or a path).
 - [ ] `ao.LLMPolicy(render=, model=, n=)` in Python.
 - [ ] Cost estimate; confirmation prompt unless `--yes`; `--sample N` seeded subset.
-- [ ] `agentope check` readiness report (§10): available levels, cost at N, context features, candidate coverage, parallel-tool warning.
+- [ ] `agentope check` readiness report (§10) on traces or decisions.
+- [ ] One-shot `eval --traces` runs sampling when the level needs it.
 - [ ] Pilot study: N at which estimates stabilize (§14 Q1); α vs. dropping decisions (§14 Q2).
 
 ---
 
-## 4. v0.3: trace import, DR, sensitivity
+## 5. v0.4: DR, sensitivity, Level 4
 
-- [ ] OTLP JSON parser (with or without gzip).
-- [ ] Attribute mapping for OpenTelemetry GenAI (`gen_ai.*`) and OpenInference; handle differences between instrumentations.
-- [ ] Decision extraction (§11):
-  - chat spans with tool calls
-  - fallback to `execute_tool` spans when content is missing
-  - `__none__` inference
-- [ ] Candidates from request tool definitions; otherwise the union seen in the data, flagged and added to the assumptions list.
-- [ ] Write stored inputs to `inputs/` when content capture is on.
-- [ ] `--context name=attr.path,…` extraction.
-- [ ] `logging_config` from the request and response model and temperature.
-- [ ] `toolset` and `tool+args:<fields>` action maps; custom Python maps.
-- [ ] `agentope import`; one-shot `agentope eval --traces …` (import → sample if needed → eval). Match the summary output shown in `index.html` (decisions, how `chosen` was found, candidate source, propensities, context, stored inputs).
-- [ ] Read `agentope.*` span attributes (explored, propensity, candidates, safe_candidates) into decisions.
-- [ ] Test with Langfuse and Phoenix exports.
 - [ ] DR estimator using `q_hat` from `target.jsonl` or a supplied outcome model.
 - [ ] Level 3 break-even Γ under the marginal sensitivity model (Kallus & Zhou 2018), with a plain-language sentence in the report.
-
----
-
-## 5. v0.4: Level 4 (modeled)
-
-- [ ] Outcome model interface `q(context, action) -> expected outcome`.
-- [ ] Direct-method estimator.
-- [ ] Calibration on logged actions, with the stated caveat that it says nothing about actions that weren't logged.
-- [ ] Guard as at Level 3; verdict capped at `weak`.
+- [ ] Level 4: outcome model interface `q(context, action)`, direct method, calibration on logged actions with the caveat, guard as at Level 3, verdict capped at `weak`.
 
 ---
 
 ## 6. Documentation
 
-- [x] `index.html`: what agentope is, evidence levels, a six-step guide, verdict meanings, troubleshooting.
-- [ ] **The trace example in `index.html` is a preview.** It shows `agentope import` (v0.3) and `agentope.*` span attributes (proposal, §0.3), and its numbers are made up, not from a run. Until import exists, label it as a preview. Once it exists, turn it into a runnable example (simulated support agent → OTLP traces → import → eval) and replace the numbers with real output.
-- [ ] Keep `index.html`, `README.md` and the CLI in sync (flags, report layout, status table) as features land.
+- [x] `index.html`: what agentope is, evidence levels, guide, trace example, verdict meanings, troubleshooting.
+- [~] **The trace example in `index.html`.** The commands and summary format now match the real CLI. Its numbers are still illustrative, not from a run. Turn it into a runnable example (simulated support agent → OTLP traces → import → eval) and use real output.
+- [x] README: status, quickstart, trace import, `--absent-means-default`.
+- [ ] Keep `index.html`, `README.md` and the CLI in sync as features land.
 
 ---
 
@@ -196,3 +141,9 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 | 2026-11-16 | Bootstrap resamples join keys, not decisions | Decisions sharing a join key share an outcome |
 | 2026-11-16 | Level 3 support = actions chosen somewhere in the logs | A fitted softmax never gives exactly 0; actions never chosen have no evidence at all |
 | 2026-11-16 | Naive timestamps rejected | Guessing a timezone could silently shift outcome windows |
+| 2026-11-16 | `--absent-means-default` flag for success-only outcome logs | Owner's choice; keeps the expired rules for everyone else |
+| 2026-11-16 | Trace import before Level 2 (milestones reordered) | Owner's choice; lets users start from the traces they already have |
+| 2026-11-16 | Stored inputs are OpenAI-compatible chat-completions request bodies | Owner's choice; replayable against vLLM, Ollama, llama.cpp and hosted APIs |
+| 2026-11-16 | Import takes the first model call per agent run by default | One decision per turn, made before any tool result; `--decisions all` for every call |
+| 2026-11-16 | Tool spans beat response content for `chosen` when the export has tool spans | They show what actually ran (e.g. after exploration overrode the model) |
+| 2026-11-16 | Level 2 tests will use a mock server only | Owner's choice |

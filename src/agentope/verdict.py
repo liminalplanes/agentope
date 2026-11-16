@@ -19,9 +19,14 @@ class VerdictThresholds:
 
 
 def assess(
-    level: int, diag: dict[str, Any], estimable: bool, th: VerdictThresholds
+    level: int,
+    diag: dict[str, Any],
+    estimable: bool,
+    th: VerdictThresholds,
+    absent_means_default: bool = False,
 ) -> tuple[str, list[str]]:
-    """Return (verdict, reasons)."""
+    """Return (verdict, reasons). With ``absent_means_default``, a missing outcome is
+    the intended meaning (success-only logs), so the expired-share rules don't apply."""
     unreliable = []
     if not estimable:
         unreliable.append("the target gives zero probability to every logged choice")
@@ -34,7 +39,7 @@ def assess(
         unreliable.append(
             f"effective sample size {diag['ess']:.1f} is below {th.unreliable_min_ess:g}"
         )
-    if diag["expired_share"] > th.unreliable_expired_share:
+    if not absent_means_default and diag["expired_share"] > th.unreliable_expired_share:
         unreliable.append(
             f"{diag['expired_share']:.1%} of decisions expired "
             f"(limit {th.unreliable_expired_share:.0%})"
@@ -49,7 +54,7 @@ def assess(
         weak.append(
             f"effective sample size is {diag['ess_share']:.1%} of n (below {th.weak_ess_share:.0%})"
         )
-    if diag["expired_share"] > th.weak_expired_share:
+    if not absent_means_default and diag["expired_share"] > th.weak_expired_share:
         weak.append(
             f"{diag['expired_share']:.1%} of decisions expired (above {th.weak_expired_share:.0%})"
         )

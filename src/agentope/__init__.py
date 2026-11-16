@@ -10,7 +10,8 @@ except PackageNotFoundError:  # pragma: no cover
 from .decisions import Decision, load_decisions  # noqa: E402
 from .errors import AgentopeError, DataError, RefusedError  # noqa: E402
 from .evaluate import evaluate  # noqa: E402
-from .helpers import explore, randomize  # noqa: E402
+from .helpers import explore, randomize, span_attributes  # noqa: E402
+from .importer import ImportedDecisions, import_traces  # noqa: E402
 from .outcomes import Outcome, load_outcomes  # noqa: E402
 from .report import Report  # noqa: E402
 from .targets import Target, callable_target, load_target_jsonl  # noqa: E402
@@ -20,6 +21,7 @@ __all__ = [
     "AgentopeError",
     "DataError",
     "Decision",
+    "ImportedDecisions",
     "Outcome",
     "RefusedError",
     "Report",
@@ -29,8 +31,10 @@ __all__ = [
     "callable_target",
     "evaluate",
     "explore",
+    "import_traces",
     "load_decisions",
     "load_outcomes",
     "load_target_jsonl",
     "randomize",
+    "span_attributes",
 ]

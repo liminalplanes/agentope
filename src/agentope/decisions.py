@@ -98,6 +98,10 @@ class Decision:
     n_samples: int | None = None
     input_ref: str | None = None
     logging_config: dict[str, Any] | None = None
+    action_map: str | None = None
+    """The action map that produced ``chosen`` (written by trace import)."""
+    candidates_source: str | None = None
+    """Where ``candidates`` came from; ``"inferred"`` means from actions seen in the logs."""
 
     @property
     def has_logged_propensity(self) -> bool:
@@ -194,6 +198,12 @@ class Decision:
         logging_config = d.get("logging_config")
         if logging_config is not None and not isinstance(logging_config, Mapping):
             raise DataError(f"{where}: logging_config must be an object")
+        action_map = d.get("action_map")
+        if action_map is not None and not isinstance(action_map, str):
+            raise DataError(f"{where}: action_map must be a string")
+        candidates_source = d.get("candidates_source")
+        if candidates_source is not None and not isinstance(candidates_source, str):
+            raise DataError(f"{where}: candidates_source must be a string")
 
         return cls(
             decision_id=decision_id,
@@ -211,6 +221,8 @@ class Decision:
             n_samples=n_samples,
             input_ref=input_ref,
             logging_config=dict(logging_config) if logging_config is not None else None,
+            action_map=action_map,
+            candidates_source=candidates_source,
         )
 
 
