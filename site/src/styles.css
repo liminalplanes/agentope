@@ -153,6 +153,17 @@
 }
 
 
+/* Animated terminal: lines not yet played are hidden once JavaScript is on, so there is
+   no flash before it starts. Without JavaScript, or with reduced motion, everything shows. */
+html.js .term[data-phase="idle"] .term-line {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js .term[data-phase="idle"] .term-line {
+    visibility: visible;
+  }
+}
+
 /* Shiki dual themes: colours come from CSS variables so the theme toggle applies. */
 .shiki,
 .shiki span {

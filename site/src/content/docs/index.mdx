@@ -5,6 +5,11 @@ section: Getting started
 order: 1
 ---
 
+import { DecisionPicture } from "#/components/example/decision-picture"
+import { Evaluable, Integrations } from "#/components/example/landing"
+import { Alternatives } from "#/components/example/positioning"
+
+
 Teams change agents constantly: a new system prompt, a different model, a new tool, a different router. Most judge those changes with LLM-as-judge scores or slow A/B tests. agentope estimates a change's effect on **real outcomes**, such as resolved tickets or purchases, from the logs you already keep.
 
 ## The question
@@ -34,6 +39,24 @@ Off-policy evaluation needs to know how likely each logged choice was. Agents ra
 3. **Estimated**: a model of the logging policy is fit from the logged context.
 
 Each level states the assumptions it needs, and the report ends with a verdict: <Verdict kind="ok" />, <Verdict kind="weak" /> or <Verdict kind="unreliable" />. See [Evidence levels](/docs/evidence-levels).
+
+## How it works
+
+Your agent has already made thousands of choices, and you know how each one turned out. In some of them it happened to do what the changed version would do. agentope weighs those by how likely the agent was to make that choice, and that gives the changed version's result. Real rows from the [worked example](/docs/worked-example):
+
+<DecisionPicture />
+
+## Compared with what teams do today
+
+<Alternatives />
+
+## What you can evaluate
+
+<Evaluable />
+
+## Works with
+
+<Integrations />
 
 ## Where to go next
 

@@ -5,6 +5,9 @@ section: Concepts
 order: 1
 ---
 
+import { EvidenceLadder } from "#/components/example/landing"
+
+
 agentope weights each logged decision by how much more (or less) likely the target policy was to make the same choice. That needs the **propensity**: the probability the logging policy gave its choice. agentope evaluates at one level at a time and never mixes them. By default it picks the strongest level the data supports; `--level` chooses explicitly.
 
 ## Level 1: Logged
@@ -37,6 +40,12 @@ No logged or sampled propensities. A multinomial logit of the logging policy is 
 ## Level 4: Modeled
 
 No propensities at all; an outcome model only. Planned for v0.4.
+
+## The levels on the same agent
+
+The support agent from the [worked example](/docs/worked-example), the same rule ("look up the order whenever there's an order number"), evaluated with less and more to work with. Real output on simulated traces; the green line is the true effect.
+
+<EvidenceLadder />
 
 ## Assumptions at a glance
 

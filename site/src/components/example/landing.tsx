@@ -1,87 +1,13 @@
-import { ArrowDown, ArrowUpRight, Check, Minus, Plug } from "lucide-react";
+import { ArrowUpRight, Check, Minus, Plug } from "lucide-react";
 import { siOllama, siOpentelemetry, siVllm } from "simple-icons";
 import { SiteLink } from "#/components/docs/doc-link";
 import { CodeBlock } from "#/components/docs/mdx-components";
 import { IntervalChart } from "#/components/example/interval";
-import { MonoPill, Verdict, type VerdictKind } from "#/components/verdict";
+import { Verdict, type VerdictKind } from "#/components/verdict";
 import ExploreShort from "#/content/example/explore-short.mdx";
-import {
-	count,
-	example,
-	type SavedReport,
-	sampled,
-	signed,
-} from "#/lib/example";
+import { example, type SavedReport, sampled, signed } from "#/lib/example";
 import { site } from "#/lib/site";
 import { cn } from "#/lib/utils";
-
-/* ── Hero: what goes in, what comes out ──────────────────────────────── */
-
-const inputs = [
-	{
-		file: "traces.otlp.json.gz",
-		what: `What the agent did, in ${count(sampled.meta.conversations)} conversations`,
-	},
-	{ file: "helpdesk.csv", what: "Which tickets were resolved" },
-	{ file: "policies.py", what: "The change: look up the order first" },
-];
-
-export function HeroInOut() {
-	const r = sampled.report as SavedReport;
-	const [lo, hi] = r.estimates.ci95 as [number, number];
-	return (
-		<figure className="m-0 flex min-w-0 flex-col gap-2">
-			<div className="overflow-hidden rounded-md border bg-card">
-				<div className="border-b bg-muted/60 px-4 py-2 font-mono text-[0.7rem] text-muted-foreground">
-					what you give it
-				</div>
-				<ul className="m-0 list-none divide-y p-0">
-					{inputs.map((input) => (
-						<li
-							key={input.file}
-							className="grid grid-cols-1 gap-x-4 gap-y-0.5 px-4 py-2.5 text-sm sm:grid-cols-[11rem_minmax(0,1fr)]"
-						>
-							<span className="font-mono text-xs leading-5">{input.file}</span>
-							<span className="text-muted-foreground">{input.what}</span>
-						</li>
-					))}
-				</ul>
-			</div>
-			<ArrowDown
-				aria-hidden="true"
-				className="mx-auto size-4 text-muted-foreground"
-			/>
-			<div className="overflow-hidden rounded-md border bg-card">
-				<div className="border-b bg-muted/60 px-4 py-2 font-mono text-[0.7rem] text-muted-foreground">
-					what you get back
-				</div>
-				<div className="grid gap-3 p-4">
-					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-						<span className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-							{signed(r.estimates.difference as number)}
-						</span>
-						<span className="text-sm text-muted-foreground">
-							resolution rate if the change had been live, 95% range{" "}
-							{signed(lo)} to {signed(hi)}
-						</span>
-					</div>
-					<div className="flex flex-wrap items-center gap-2 text-sm">
-						<MonoPill>
-							L{r.level.level} {r.level.name}
-						</MonoPill>
-						<span className="text-muted-foreground">evidence level</span>
-						<Verdict kind={r.verdict as VerdictKind} className="ml-2" />
-						<span className="text-muted-foreground">verdict</span>
-					</div>
-					<p className="m-0 text-sm text-muted-foreground">
-						Plus what the estimate assumes, and what to record next for stronger
-						evidence.
-					</p>
-				</div>
-			</div>
-		</figure>
-	);
-}
 
 /* ── What you can evaluate ───────────────────────────────────────────── */
 
@@ -275,7 +201,7 @@ export function EvidenceLadder() {
 
 type Logo = { kind: "icon"; path: string } | { kind: "image"; src: string };
 
-type Integration = {
+export type Integration = {
 	name: string;
 	detail: string;
 	href: string;
@@ -286,7 +212,7 @@ type Integration = {
 const otel: Logo = { kind: "icon", path: siOpentelemetry.path };
 const arize: Logo = { kind: "image", src: "/logos/arize.jpg" };
 
-const traceTools: Integration[] = [
+export const traceTools: Integration[] = [
 	{
 		name: "OpenTelemetry GenAI",
 		detail: "The gen_ai.* conventions for model calls and tool calls",
@@ -324,7 +250,7 @@ const traceTools: Integration[] = [
 	},
 ];
 
-const modelTools: Integration[] = [
+export const modelTools: Integration[] = [
 	{
 		name: "Any OpenAI-compatible API",
 		detail: "The chat-completions API, with retries and rate-limit handling",
@@ -355,7 +281,7 @@ const modelTools: Integration[] = [
 	},
 ];
 
-function IntegrationLogo({ logo }: { logo: Logo | null }) {
+export function IntegrationLogo({ logo }: { logo: Logo | null }) {
 	if (logo === null) {
 		return <Plug aria-hidden="true" className="size-5 text-muted-foreground" />;
 	}

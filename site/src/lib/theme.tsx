@@ -11,7 +11,7 @@ export type ThemeChoice = "light" | "dark" | "system";
 const STORAGE_KEY = "agentope-theme";
 
 /** Runs before first paint (inlined in <head>) so the page never flashes the wrong theme. */
-export const themeInitScript = `(function(){try{var c=localStorage.getItem('${STORAGE_KEY}')||'system';var d=c==='dark'||(c==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark');}})();`;
+export const themeInitScript = `(function(){document.documentElement.classList.add('js');try{var c=localStorage.getItem('${STORAGE_KEY}')||'system';var d=c==='dark'||(c==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark');}})();`;
 
 function readChoice(): ThemeChoice {
 	try {
