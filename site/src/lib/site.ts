@@ -7,7 +7,7 @@ export const site = {
 	description:
 		"Find out whether a change to how your LLM agent decides would actually help your users, using the conversations you already have. Offline evaluation with evidence levels and verdicts, no logprobs.",
 	github: "https://github.com/liminalplanes/agentope",
-	install: 'uv add "agentope[llm]"',
+	install: 'uv tool install "agentope[llm]"',
 	pipInstall: 'pip install "agentope[llm]"',
 } as const;
 

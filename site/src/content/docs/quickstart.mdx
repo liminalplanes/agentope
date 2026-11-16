@@ -7,15 +7,25 @@ order: 2
 
 ## Install
 
-The `llm` extra is only needed to sample a model (Level 2).
+For the `agentope` command:
+
+```sh
+uv tool install "agentope[llm]"
+```
+
+To use it from Python code, add it to your project instead. The command then runs as `uv run agentope`.
 
 ```sh
 uv add "agentope[llm]"
-# or
+# or, in a virtual environment
 pip install "agentope[llm]"
 ```
 
-Python 3.12 or newer.
+The `llm` extra is only needed to sample a model (Level 2).
+
+<Callout kind="note" title="Needs Python 3.12 or newer">
+If pip says `No matching distribution found for agentope`, your Python is too old. `uv tool install` picks a suitable Python for you.
+</Callout>
 
 ## 1. Log decisions with a little exploration
 
