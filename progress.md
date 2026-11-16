@@ -4,7 +4,7 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 
 **Legend:** `[ ]` not started · `[~]` in progress / partial · `[x]` done
 
-**Status (2026-11-16):** v0.1 implemented (Levels 1 and 3, `eval`, logging helpers), 39 tests passing. Next: settle the v0.2 spec gaps (§0), then Level 2 sampling.
+**Status (2026-11-16):** v0.1 implemented (Levels 1 and 3, `eval`, logging helpers), 39 tests passing. `index.html` explains the system and has a guide (see §6: its trace example describes features not built yet). Next: settle the v0.2 spec gaps (§0), then Level 2 sampling.
 
 ---
 
@@ -36,7 +36,7 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 - [ ] §11: when response content is missing, find `chosen` from `execute_tool` spans (`gen_ai.tool.name`), and infer `__none__` when a chat span has no tool-execution children.
 - [ ] §5.5 / §9: list "candidates inferred from the data" as a printed assumption whenever it applies.
 - [~] §8: empty or near-empty `context` at Level 3. *Done:* a warning when context has no usable features. *Open:* whether this should force `unreliable`.
-- [ ] §7.3: `explore` and `randomize` can also write span attributes (`agentope.propensity`, `agentope.explored`, `agentope.candidates`), so Level 1 data arrives in existing traces.
+- [ ] §7.3: `explore` and `randomize` can also write span attributes (`agentope.propensity`, `agentope.explored`, `agentope.candidates`, `agentope.safe_candidates`), so Level 1 data arrives in existing traces. *`index.html` already shows this in its trace example.*
 - [ ] Notes for self-hosted open-weight models: pin weights and serving config, and warn that output can vary with batch size (vLLM and similar), which affects replay fidelity.
 - [ ] `check`: say which action maps are available when there is no content (`tool` and `toolset` only).
 
@@ -152,7 +152,8 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 - [ ] `--context name=attr.path,…` extraction.
 - [ ] `logging_config` from the request and response model and temperature.
 - [ ] `toolset` and `tool+args:<fields>` action maps; custom Python maps.
-- [ ] `agentope import`; one-shot `agentope eval --traces …` (import → sample if needed → eval).
+- [ ] `agentope import`; one-shot `agentope eval --traces …` (import → sample if needed → eval). Match the summary output shown in `index.html` (decisions, how `chosen` was found, candidate source, propensities, context, stored inputs).
+- [ ] Read `agentope.*` span attributes (explored, propensity, candidates, safe_candidates) into decisions.
 - [ ] Test with Langfuse and Phoenix exports.
 - [ ] DR estimator using `q_hat` from `target.jsonl` or a supplied outcome model.
 - [ ] Level 3 break-even Γ under the marginal sensitivity model (Kallus & Zhou 2018), with a plain-language sentence in the report.
@@ -168,7 +169,15 @@ Tracks implementation against [`spec.md`](spec.md) (draft v0.1). Section numbers
 
 ---
 
-## 6. Research and calibration (ongoing)
+## 6. Documentation
+
+- [x] `index.html`: what agentope is, evidence levels, a six-step guide, verdict meanings, troubleshooting.
+- [ ] **The trace example in `index.html` is a preview.** It shows `agentope import` (v0.3) and `agentope.*` span attributes (proposal, §0.3), and its numbers are made up, not from a run. Until import exists, label it as a preview. Once it exists, turn it into a runnable example (simulated support agent → OTLP traces → import → eval) and replace the numbers with real output.
+- [ ] Keep `index.html`, `README.md` and the CLI in sync (flags, report layout, status table) as features land.
+
+---
+
+## 7. Research and calibration (ongoing)
 
 - [ ] Calibrate verdict thresholds in simulation: coverage of each verdict's interval (§14 Q3).
 - [ ] Decide whether a per-conversation evaluation mode belongs in v1 (§14 Q4).
