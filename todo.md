@@ -2,7 +2,6 @@
 
 ## Release
 - [ ] PyPI trusted publisher and the `pypi` GitHub environment, then `make release BUMP=minor`
-- [ ] Switch install docs from GitHub to `pip install agentope` once published
 
 ## Validate on real data
 - [ ] Real Langfuse and Phoenix trace exports
