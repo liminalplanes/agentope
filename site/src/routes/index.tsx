@@ -4,7 +4,17 @@ import { CopyButton } from "#/components/copy-button";
 import { SiteLink } from "#/components/docs/doc-link";
 import { CodeBlock } from "#/components/docs/mdx-components";
 import { DecisionPicture } from "#/components/example/decision-picture";
-import { Alternatives, Ingredients } from "#/components/example/positioning";
+import {
+	Evaluable,
+	EvidenceLadder,
+	HeroInOut,
+	Integrations,
+} from "#/components/example/landing";
+import {
+	Alternatives,
+	EvidenceLevels,
+	Verdicts,
+} from "#/components/example/positioning";
 import { ReportCard } from "#/components/example/report-card";
 import { Terminal } from "#/components/example/terminal";
 import { Button } from "#/components/ui/button";
@@ -21,7 +31,7 @@ import { site } from "#/lib/site";
 
 export const Route = createFileRoute("/")({
 	head: () => ({
-		meta: [{ title: `${site.name} · evaluate agent changes before go-live` }],
+		meta: [{ title: `${site.name} · evaluate agent decisions before go-live` }],
 	}),
 	component: Home,
 });
@@ -46,7 +56,7 @@ function Section({
 				{title}
 			</h2>
 			{lede && (
-				<p className="mt-4 mb-0 max-w-[42em] text-muted-foreground">{lede}</p>
+				<p className="mt-4 mb-0 max-w-[44em] text-muted-foreground">{lede}</p>
 			)}
 			<div className="mt-12">{children}</div>
 		</section>
@@ -89,10 +99,11 @@ function Home() {
 
 	return (
 		<main>
-			<section className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-14 px-5 pt-16 md:pt-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
-				<div className="lg:pt-4">
+			{/* What it does */}
+			<section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-5 pt-16 md:pt-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+				<div>
 					<h1 className="text-[clamp(2.4rem,5vw,3.8rem)] leading-[1.04] font-semibold tracking-[-0.045em]">
-						Evaluate agent changes before go-live.
+						Evaluate agent decisions before go-live.
 					</h1>
 					<p className="mt-6 max-w-[32em] text-lg text-muted-foreground">
 						Find out whether a change to how your agent decides would actually
@@ -100,7 +111,7 @@ function Home() {
 						<span className="text-foreground">
 							using the conversations you already have
 						</span>
-						. No A/B test, no LLM judge.
+						. Add exploration for the strongest evidence.
 					</p>
 					<div className="mt-9 flex flex-wrap gap-2.5">
 						<Button asChild size="lg">
@@ -125,35 +136,69 @@ function Home() {
 						</p>
 					</div>
 				</div>
-				<div>
-					<p className="mt-0 mb-3 text-sm text-muted-foreground">
-						<span className="font-medium text-foreground">How it works.</span>{" "}
-						Your agent has already made thousands of choices, and you know how
-						each one turned out. The ones where it happened to do what the new
-						version would do, weighed by how likely that choice was, show how
-						the new version would fare.
-					</p>
-					<DecisionPicture />
-				</div>
+				<HeroInOut />
 			</section>
 
+			{/* How it works */}
 			<Section
-				title="You changed how your agent decides. Did it help?"
-				lede="Most teams have two ways to find out, and neither answers quickly, safely and on the outcomes that matter."
+				id="how"
+				title="It answers one question: would this change have helped?"
+				lede="Your agent has already made thousands of choices, and you know how each one turned out. In some of them it happened to do what the changed version would do. agentope weighs those by how likely the agent was to make that choice, and that gives the changed version's result, measured on the outcome you care about."
 			>
-				<Alternatives />
+				<div className="max-w-3xl">
+					<DecisionPicture />
+				</div>
+				<h3 className="mt-16 mb-0 font-medium">
+					Compared with what teams do today
+				</h3>
+				<div className="mt-4">
+					<Alternatives />
+				</div>
 			</Section>
 
+			{/* What can be evaluated */}
 			<Section
-				title="Three things you probably already have"
-				lede="agentope looks at one decision at a time, such as which tool the agent calls first or which model a request goes to."
+				id="scope"
+				title="What you can evaluate"
+				lede="One decision at a time, with everything after it held as it was. That's a narrower question than “is the new agent better?”, and it's what makes an answer from past conversations possible."
 			>
-				<Ingredients />
+				<Evaluable />
 			</Section>
 
+			{/* Works with */}
+			<Section
+				id="works-with"
+				title="Works with your stack"
+				lede="agentope reads standard trace exports, and for Level 2 talks to any model server that speaks the OpenAI chat API."
+			>
+				<Integrations />
+			</Section>
+
+			{/* Evidence levels */}
+			<Section
+				id="levels"
+				title="How much you can trust the answer"
+				lede={
+					<>
+						That depends on what your traces contain. agentope uses the
+						strongest evidence your data supports, says which, and lists what
+						the estimate assumes. Every level also needs{" "}
+						<span className="text-foreground">
+							a record of how each conversation turned out
+						</span>{" "}
+						(resolved tickets, purchases, ratings) and{" "}
+						<span className="text-foreground">the change, written down</span>.
+					</>
+				}
+			>
+				<EvidenceLevels />
+				<Verdicts />
+			</Section>
+
+			{/* Worked example: what you have */}
 			<Section
 				id="example"
-				title="Here's that on a support agent"
+				title="A worked example, with the traces you already have"
 				lede={
 					<>
 						At the start of each conversation, a support agent picks one of four
@@ -163,8 +208,8 @@ function Home() {
 						<span className="text-foreground">
 							look up the order whenever the customer gives an order number.
 						</span>{" "}
-						Nothing about the agent changes. Its traces include the messages, as
-						most tracing tools record them. Every output below is real; the
+						The agent is unchanged, and its traces include the messages, as most
+						tracing tools record them. Every output below is real; the
 						conversations and the model are simulated, so the right answer is
 						known too.
 					</>
@@ -182,6 +227,7 @@ function Home() {
 									"Level 1",
 									"Level 2",
 									"est. cost",
+									"Level 3",
 									"Best available",
 								])}
 							/>
@@ -189,8 +235,8 @@ function Home() {
 					>
 						<p className="m-0">
 							{count(meta.conversations)} conversations from the last{" "}
-							{meta.days} days. Because the traces include the messages,
-							agentope can find out how the model chooses by asking it again.
+							{meta.days} days. No exploration, so Level 1 isn't available. The
+							traces include the messages, so Level 2 is.
 						</p>
 					</Step>
 
@@ -266,7 +312,7 @@ function Home() {
 
 					<Step
 						n={5}
-						title="Get an answer you can check"
+						title="Read the answer"
 						aside={
 							<div className="max-w-xl">
 								<ReportCard report={report} truth={truth.lookup_difference} />
@@ -288,56 +334,32 @@ function Home() {
 							the range.
 						</p>
 						<p className="m-0">
-							The answer leans on the model behaving today as it did when the
-							conversations happened. The report checks that: the logged choice
-							came up again in {percent(sampling.reproduction_rate)} of
-							conversations.
+							The answer relies on the model behaving today as it did then. The
+							report checks it: the logged choice came up again in{" "}
+							{percent(sampling.reproduction_rate)} of conversations.
 						</p>
 					</Step>
 				</ol>
+			</Section>
 
-				<div className="mt-14 grid grid-cols-1 gap-8 border-t pt-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-14">
-					<div>
-						<h3 className="m-0 text-lg font-semibold tracking-tight">
-							No messages in your traces?
-						</h3>
-						<p className="mt-2 mb-0 text-muted-foreground">
-							Then agentope can't ask the model again. It can still estimate
-							from what you logged about each conversation, but only once you
-							accept that nothing important is missing from it, and it says so
-							rather than guessing:
-						</p>
-					</div>
-					<Terminal
-						command="agentope eval decisions.jsonl --outcomes helpdesk.csv --horizon 3d --target …"
-						output={steps.refused.output.split("\n").slice(0, 3).join("\n")}
-					/>
-				</div>
-
-				<div className="mt-14 grid grid-cols-1 gap-8 border-t pt-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-14">
-					<div>
-						<h3 className="m-0 text-lg font-semibold tracking-tight">
-							Want stronger evidence?
-						</h3>
-						<p className="mt-2 mb-0 text-muted-foreground">
-							Let a small share of conversations try a random option you
-							consider safe, and agentope no longer has to rely on the model
-							behaving the same. The full walkthrough shows that path on the
-							same agent.
-						</p>
-					</div>
-					<div className="flex flex-wrap items-start gap-2.5">
-						<Button asChild>
-							<SiteLink href="/docs/quickstart">
-								Try it on your agent <ArrowRight />
-							</SiteLink>
-						</Button>
-						<Button asChild variant="ghost">
-							<SiteLink href="/docs/worked-example">
-								Walkthrough with exploration
-							</SiteLink>
-						</Button>
-					</div>
+			{/* What you could add */}
+			<Section
+				id="better-evidence"
+				title="What you could add for better evidence"
+				lede="The same rule, evaluated on the same agent with less and more to work with. The green line is the true effect in each case."
+			>
+				<EvidenceLadder />
+				<div className="mt-12 flex flex-wrap items-center gap-2.5">
+					<Button asChild>
+						<SiteLink href="/docs/quickstart">
+							Try it on your agent <ArrowRight />
+						</SiteLink>
+					</Button>
+					<Button asChild variant="ghost">
+						<SiteLink href="/docs/worked-example">
+							Walkthrough with exploration
+						</SiteLink>
+					</Button>
 				</div>
 			</Section>
 		</main>

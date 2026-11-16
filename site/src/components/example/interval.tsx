@@ -12,15 +12,20 @@ export function IntervalChart({
 	lo,
 	hi,
 	truth,
+	domain,
 }: {
 	estimate: number;
 	lo: number;
 	hi: number;
 	truth?: number;
+	/** A fixed [min, max] scale, so several charts can be compared directly. */
+	domain?: [number, number];
 }) {
 	const values = [0, lo, hi, estimate, ...(truth === undefined ? [] : [truth])];
-	const min = Math.floor((Math.min(...values) - 0.02) / STEP) * STEP;
-	const max = Math.ceil((Math.max(...values) + 0.02) / STEP) * STEP;
+	const min =
+		domain?.[0] ?? Math.floor((Math.min(...values) - 0.02) / STEP) * STEP;
+	const max =
+		domain?.[1] ?? Math.ceil((Math.max(...values) + 0.02) / STEP) * STEP;
 	const x = (v: number) => ((v - min) / (max - min)) * WIDTH;
 	const ticks: number[] = [];
 	for (let t = min; t <= max + 1e-9; t += STEP)

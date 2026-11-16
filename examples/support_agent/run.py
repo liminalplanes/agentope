@@ -141,8 +141,14 @@ def sampled() -> dict:
         "    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
         ["-o", "report-lookup.json"],
     )
-    # Without the samples, all agentope could do is model the choice from context
-    # (Level 3), and it won't without explicit acceptance.
+    # The same question from logged context alone (Level 3), as if the traces had no
+    # messages: it only runs with explicit acceptance of its untestable assumption.
+    steps["estimated"] = agentope(
+        "agentope eval decisions.jsonl --level 3 --accept-unverifiable \\\n"
+        "    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
+        ["-o", "report-estimated.json"],
+    )
+    # Without the samples or that acceptance, agentope refuses.
     steps["refused"] = agentope(
         "agentope eval decisions.jsonl \\\n"
         "    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
@@ -172,6 +178,7 @@ def sampled() -> dict:
         "meta": meta(),
         "steps": steps,
         "report": json.loads(Path("report-lookup.json").read_text()),
+        "estimated": json.loads(Path("report-estimated.json").read_text()),
         "truth": truths(world.value(lambda ctx, cands: world.model_policy(ctx))),
         "picture": {"rows": rows, "total": total, "matched": matched},
     }

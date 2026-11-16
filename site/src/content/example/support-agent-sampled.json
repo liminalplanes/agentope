@@ -24,6 +24,10 @@
 			"command": "agentope eval decisions.jsonl --samples samples.jsonl \\\n    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
 			"output": "agentope · tool_choice · target: policies.py:lookup_when_order_number\n────────────────────────────────────────────────────────────\nEvidence level   L2 Sampled (N=64, α=0.5)\nDecisions        12,000   (rewarded 12,000 · expired 0 · 0.0%)\n\nLogging policy   0.637  realized mean outcome\nTarget policy    0.711  SNIPS   (IPS 0.755)\nDifference      +0.074  95% CI [+0.058, +0.090]\n\nDiagnostics      ESS 3,625 (30% of n) · max weight 44 · min propensity 0.00758\n                 support violations 0.1% of target mass (15 decisions) [checked against actions the logging model never produced in samples]\n                 logged choice reproduced in samples: 100% · 208 decisions with < 3 matching samples\n\nVerdict          ok\n\nThis estimate assumes:\n  • The stored inputs are everything the model saw (system prompt, history, tool definitions, retrieved documents)\n  • The logging model (qwen2.5-7b-instruct) behaves today as it did when logging; the logged choice came up again in samples on 100% of decisions\n  • 64 samples per decision (smoothing α=0.5) estimate the propensities well enough; 208 decisions saw the logged choice fewer than 3 times\n  • Which tool is called matters, not its arguments or wording (action map: tool)\n  • Only tool_choice changes; later steps behave as they did under the logging policy\n  • An outcome missing within 3d means outcome = 0\n\nTo strengthen this:\n  • Sample more per decision (agentope sample --n 128) to firm up propensities\n  • The target puts 0.1% of its probability on actions the logging policy never takes; sample more per decision, or keep the target within what the model does"
 		},
+		"estimated": {
+			"command": "agentope eval decisions.jsonl --level 3 --accept-unverifiable \\\n    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
+			"output": "agentope · tool_choice · target: policies.py:lookup_when_order_number\n────────────────────────────────────────────────────────────\nEvidence level   L3 Estimated (multinomial logit, 5-fold cross-fit)\nDecisions        12,000   (rewarded 12,000 · expired 0 · 0.0%)\n\nLogging policy   0.637  realized mean outcome\nTarget policy    0.728  SNIPS   (IPS 0.722)\nDifference      +0.091  95% CI [+0.081, +0.101]\n\nDiagnostics      ESS 5,187 (43% of n) · max weight 6.11 · min propensity 0.0274\n                 support violations 0 [checked against actions chosen in the logs]\n                 propensity model: 5-fold cross-fit · features: customer_tier, has_order_number, intent\n                 log loss 1.155 vs 1.357 context-free · calibration error 0.005\n\nVerdict          weak\n                  • Level 3 rests on assumptions that cannot be checked from data\n\nThis estimate assumes:\n  • Every input that influenced both the logging choice and the outcome is in context (3 features: customer_tier, has_order_number, intent). Not checkable from data\n  • The propensity model (multinomial logit) describes the logging policy well (see calibration above)\n  • The interval treats the estimated propensities as fixed\n  • Which tool is called matters, not its arguments or wording (action map: tool)\n  • Only tool_choice changes; later steps behave as they did under the logging policy\n  • An outcome missing within 3d means outcome = 0\n\nTo strengthen this:\n  • Log with agentope.explore (ε=0.05) for ~5 weeks → Level 1 at this traffic level (aiming for ESS ≈ 400)\n  • Record more of what the agent saw in context; Level 3 is only as good as context\n  • If content capture is on, sample the logging model (agentope sample) → Level 2"
+		},
 		"refused": {
 			"command": "agentope eval decisions.jsonl \\\n    --outcomes helpdesk.csv --horizon 3d --target policies.py:lookup_when_order_number",
 			"output": "agentope: refused\n\nLevel 3 (Estimated) needs your explicit acceptance of an assumption that cannot be checked.\n\nAt Level 3, agentope models how the logging policy chose from `context`.\nThat is only valid if every input that influenced both the\nagent's choice and the outcome is recorded in `context`. Anything the agent saw\nthat is not in `context` (retrieved documents, conversation tone, ...) can bias\nthe result in either direction, and nothing in the data can reveal it.\n\nRe-run with --accept-unverifiable (CLI) or accept_unverifiable=True (Python) to\nproceed, or log with agentope.explore / agentope.randomize to reach Level 1."
@@ -103,7 +107,7 @@
 			"files": {
 				"decisions.jsonl": "5b9513df32fb07b6a6eba3ca8181494a4fd50eda93cf78756f26762a1d269a6e",
 				"helpdesk.csv": "395e5357932b09ea611094c3b7632b63176e8c5e73f752a5de400c342bdde401",
-				"samples.jsonl": "989046abc8ab0104d5d79e62edf23e1482abd7484d43c8a1c662aeef6a797e38",
+				"samples.jsonl": "96c41784489646f1281fdfb2fba8430992af0e7a61f840e68523f093c4c23631",
 				"policies.py": "b60da48704ce3db4665ec5658ee2683b350e616aab30e66fa438ef31a946ec67"
 			},
 			"agentope_version": "0.3.0",
@@ -111,6 +115,93 @@
 			"n_bootstrap": 2000,
 			"folds": null,
 			"alpha": 0.5,
+			"horizon_seconds": 259200.0,
+			"default_reward": 0.0,
+			"absent_means_default": false,
+			"action_map": "tool"
+		}
+	},
+	"estimated": {
+		"decision_point": "tool_choice",
+		"target": "policies.py:lookup_when_order_number",
+		"level": {
+			"level": 3,
+			"name": "Estimated",
+			"detail": "multinomial logit, 5-fold cross-fit"
+		},
+		"estimates": {
+			"logging_mean": 0.6370833333333333,
+			"snips": 0.7281903955765674,
+			"ips": 0.7221493847249327,
+			"difference": 0.09110706224323406,
+			"ci95": [0.08077376858198237, 0.1013649641171214],
+			"trustworthy": true
+		},
+		"diagnostics": {
+			"n": 12000,
+			"n_excluded": 0,
+			"n_logging_mean": 12000,
+			"rewarded": 12000,
+			"expired": 0,
+			"expired_share": 0.0,
+			"outcomes": 12000,
+			"unmatched_outcomes": 0,
+			"shared_join_key_decisions": 0,
+			"explored": 0,
+			"ess": 5187.091552397485,
+			"ess_share": 0.4322576293664571,
+			"max_weight": 6.114873315380596,
+			"min_propensity": 0.027358212033484958,
+			"support_violation_mass": 0.0,
+			"support_violation_decisions": 0,
+			"support_check": "actions chosen in the logs",
+			"bootstrap": {
+				"resamples": 2000,
+				"undefined": 0,
+				"cluster": "join_key"
+			},
+			"propensity_model": {
+				"type": "multinomial logit",
+				"folds": 5,
+				"context_features": ["customer_tier", "has_order_number", "intent"],
+				"n_features": 7,
+				"converged": true,
+				"log_loss": 1.1546251251148056,
+				"baseline_log_loss": 1.356705591052661,
+				"calibration_error": 0.00457344031549735
+			},
+			"sampling": null,
+			"absent_means_default": false
+		},
+		"verdict": "weak",
+		"verdict_reasons": [
+			"Level 3 rests on assumptions that cannot be checked from data"
+		],
+		"assumptions": [
+			"Every input that influenced both the logging choice and the outcome is in context (3 features: customer_tier, has_order_number, intent). Not checkable from data",
+			"The propensity model (multinomial logit) describes the logging policy well (see calibration above)",
+			"The interval treats the estimated propensities as fixed",
+			"Which tool is called matters, not its arguments or wording (action map: tool)",
+			"Only tool_choice changes; later steps behave as they did under the logging policy",
+			"An outcome missing within 3d means outcome = 0"
+		],
+		"how_to_improve": [
+			"Log with agentope.explore (ε=0.05) for ~5 weeks → Level 1 at this traffic level (aiming for ESS ≈ 400)",
+			"Record more of what the agent saw in context; Level 3 is only as good as context",
+			"If content capture is on, sample the logging model (agentope sample) → Level 2"
+		],
+		"warnings": [],
+		"inputs": {
+			"files": {
+				"decisions.jsonl": "5b9513df32fb07b6a6eba3ca8181494a4fd50eda93cf78756f26762a1d269a6e",
+				"helpdesk.csv": "395e5357932b09ea611094c3b7632b63176e8c5e73f752a5de400c342bdde401",
+				"policies.py": "b60da48704ce3db4665ec5658ee2683b350e616aab30e66fa438ef31a946ec67"
+			},
+			"agentope_version": "0.3.0",
+			"seed": 0,
+			"n_bootstrap": 2000,
+			"folds": 5,
+			"alpha": null,
 			"horizon_seconds": 259200.0,
 			"default_reward": 0.0,
 			"absent_means_default": false,

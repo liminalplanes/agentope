@@ -1,4 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22">
-  <style>.ink{stroke:#111318}@media (prefers-color-scheme:dark){.ink{stroke:#eceef2}}</style>
-  <path class="ink" d="M3.5 7.2H18.5M8.6 7.2L7.6 17.4M14.2 7.2V15.1Q14.2 17.4 16.6 17.4" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <style>.a{stop-color:#3b4fb0}.b{stop-color:#2f9e86}@media (prefers-color-scheme:dark){.a{stop-color:#7d8ff0}.b{stop-color:#4fc98f}}</style>
+  <defs>
+    <linearGradient id="g" x1="3" y1="5" x2="19" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" class="a"/>
+      <stop offset="1" class="b"/>
+    </linearGradient>
+  </defs>
+  <path d="M3.5 7.2H18.5M8.6 7.2L7.6 17.4M14.2 7.2V15.1Q14.2 17.4 16.6 17.4" fill="none" stroke="url(#g)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
