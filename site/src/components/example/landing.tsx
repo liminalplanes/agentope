@@ -1,12 +1,10 @@
-import { ArrowUpRight, Check, Minus, Plug } from "lucide-react";
+import { Check, Minus, Plug } from "lucide-react";
 import { siOllama, siOpentelemetry, siVllm } from "simple-icons";
-import { SiteLink } from "#/components/docs/doc-link";
 import { CodeBlock } from "#/components/docs/mdx-components";
 import { IntervalChart } from "#/components/example/interval";
 import { Verdict, type VerdictKind } from "#/components/verdict";
 import ExploreShort from "#/content/example/explore-short.mdx";
 import { example, type SavedReport, sampled, signed } from "#/lib/example";
-import { site } from "#/lib/site";
 import { cn } from "#/lib/utils";
 
 /* ── What you can evaluate ───────────────────────────────────────────── */
@@ -315,93 +313,5 @@ export function IntegrationLogo({
 				large && "opacity-70 group-hover:opacity-100",
 			)}
 		/>
-	);
-}
-
-function IntegrationList({
-	title,
-	items,
-}: {
-	title: string;
-	items: Integration[];
-}) {
-	return (
-		<div>
-			<h3 className="m-0 font-medium">{title}</h3>
-			<ul className="m-0 mt-4 list-none divide-y border-y p-0">
-				{items.map((item) => {
-					const external = item.href.startsWith("http");
-					const body = (
-						<>
-							<span className="flex size-8 shrink-0 items-center justify-center rounded-[4px] border bg-card">
-								<IntegrationLogo logo={item.logo} />
-							</span>
-							<span className="min-w-0 flex-1">
-								<span className="flex items-center gap-1.5">
-									{item.name}
-									{external && (
-										<ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-									)}
-								</span>
-								<span className="block text-sm text-muted-foreground">
-									{item.detail}
-								</span>
-							</span>
-							<span
-								className={cn(
-									"shrink-0 font-mono text-[0.7rem]",
-									item.tested ? "text-ok" : "text-muted-foreground",
-								)}
-							>
-								{item.tested ? "tested" : "should work"}
-							</span>
-						</>
-					);
-					const className =
-						"group flex items-center gap-4 py-3 transition-colors hover:bg-muted/40";
-					return (
-						<li key={item.name}>
-							{external ? (
-								<a
-									href={item.href}
-									target="_blank"
-									rel="noreferrer"
-									className={className}
-								>
-									{body}
-								</a>
-							) : (
-								<SiteLink href={item.href} className={className}>
-									{body}
-								</SiteLink>
-							)}
-						</li>
-					);
-				})}
-			</ul>
-		</div>
-	);
-}
-
-export function Integrations() {
-	return (
-		<div>
-			<div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
-				<IntegrationList title="Your traces" items={traceTools} />
-				<IntegrationList title="Your model (for Level 2)" items={modelTools} />
-			</div>
-			<p className="mt-5 mb-0 max-w-[48em] text-sm text-muted-foreground">
-				“Tested” means covered by agentope's own tests. The others speak the
-				same formats and should work; if you try one,{" "}
-				<a
-					href={`${site.github}/issues`}
-					className="text-foreground underline underline-offset-4"
-				>
-					an issue saying how it went
-				</a>{" "}
-				helps. Outcomes come in as CSV or JSONL, and changes as Python
-				functions, target.jsonl or a target.yaml.
-			</p>
-		</div>
 	);
 }

@@ -6,7 +6,7 @@ order: 1
 ---
 
 import { DecisionPicture } from "#/components/example/decision-picture"
-import { Evaluable, Integrations } from "#/components/example/landing"
+import { Evaluable } from "#/components/example/landing"
 import { Alternatives } from "#/components/example/positioning"
 
 
@@ -56,7 +56,14 @@ Your agent has already made thousands of choices, and you know how each one turn
 
 ## Works with
 
-<Integrations />
+| Input | Accepted | Tested |
+| --- | --- | --- |
+| Traces | OTLP JSON exports, optionally gzipped, using the OpenTelemetry GenAI or OpenInference conventions | OpenTelemetry GenAI, OpenInference, Collector file exports |
+| Model, for Level 2 | Any OpenAI-compatible chat-completions API: OpenAI, vLLM, Ollama, llama.cpp server | A local stand-in server |
+| Outcomes | CSV or JSONL | Yes |
+| The change to test | A Python function, `target.jsonl` or `target.yaml` | Yes |
+
+Arize Phoenix and Langfuse export OTLP and should work, but haven't been tried on real exports yet. If you try one, [an issue saying how it went](https://github.com/liminalplanes/agentope/issues) helps.
 
 ## Where to go next
 
