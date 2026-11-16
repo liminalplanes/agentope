@@ -9,12 +9,10 @@ import {
 	LogoCloud,
 } from "#/components/example/compact";
 import { Button } from "#/components/ui/button";
-import { site } from "#/lib/site";
+import { seo, site } from "#/lib/site";
 
 export const Route = createFileRoute("/")({
-	head: () => ({
-		meta: [{ title: `${site.name} · evaluate agent decisions before go-live` }],
-	}),
+	head: () => seo({ title: site.title, path: "/" }),
 	component: Home,
 });
 
@@ -83,7 +81,7 @@ function Home() {
 
 			<Section
 				title="How much you can trust the answer"
-				lede="It depends on what your traces contain. agentope uses the strongest evidence you have, says which, and lists what the estimate assumes."
+				lede="It depends on what your traces contain, and you climb by recording more. agentope always uses the strongest evidence you have, and says which."
 			>
 				<LevelsCompact />
 			</Section>

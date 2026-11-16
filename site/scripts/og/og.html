@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  The link-preview image (public/og.png, 1200×630): the logo, in the dark theme.
+  Regenerate after editing (run from site/):
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+      --hide-scrollbars --allow-file-access-from-files --window-size=1200,630 \
+      --screenshot=public/og.png "file://$PWD/scripts/og/og.html"
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    background: #0c0e11;
+    color: #eceef2;
+    font-family: "Geist", system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  /* A faint glow of the logo's gradient behind the mark. */
+  body::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 900px;
+    height: 900px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(125, 143, 240, 0.12), rgba(79, 201, 143, 0.05) 40%, transparent 68%);
+  }
+  .logo {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    font-size: 132px;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+  }
+</style>
+</head>
+<body>
+  <div class="logo">
+    <svg width="150" height="150" viewBox="0 0 22 22" aria-hidden="true">
+      <defs>
+        <linearGradient id="g" x1="3" y1="5" x2="19" y2="19" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#7d8ff0"/>
+          <stop offset="1" stop-color="#4fc98f"/>
+        </linearGradient>
+      </defs>
+      <path d="M3.5 7.2H18.5M8.6 7.2L7.6 17.4M14.2 7.2V15.1Q14.2 17.4 16.6 17.4" fill="none" stroke="url(#g)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    agentope
+  </div>
+</body>
+</html>

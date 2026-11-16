@@ -20,8 +20,9 @@ export const Route = createRootRoute({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
-			{ title: site.name },
+			{ title: site.title },
 			{ name: "description", content: site.description },
+			{ name: "robots", content: "index, follow" },
 			{
 				name: "theme-color",
 				content: "#f6f7f9",
@@ -36,6 +37,7 @@ export const Route = createRootRoute({
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+			{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 		],
 	}),
 	shellComponent: RootDocument,

@@ -19,39 +19,50 @@ import {
 import { Verdict } from "#/components/verdict";
 import { cn } from "#/lib/utils";
 
-const card =
-	"rounded-md border bg-card p-5 transition-colors hover:border-foreground/20";
-
-function IconTile({ icon: Icon }: { icon: LucideIcon }) {
-	return (
-		<span className="flex size-9 items-center justify-center rounded-md border bg-muted/60">
-			<Icon className="size-4.5 text-foreground/80" />
-		</span>
-	);
-}
-
 /* ── What you can evaluate ───────────────────────────────────────────── */
 
-const changes: { icon: LucideIcon; title: string; example: string }[] = [
+type Change = {
+	icon: LucideIcon;
+	title: string;
+	file: string;
+	before: string;
+	after: string;
+	when: string;
+};
+
+/** Each kind of change, as the diff a developer would write for it. */
+const changes: Change[] = [
 	{
 		icon: Wrench,
 		title: "Which tool the agent calls first",
-		example: "lookup_order before search_kb",
+		file: "first_move",
+		before: "search_kb",
+		after: "lookup_order",
+		when: "when there's an order number",
 	},
 	{
 		icon: Split,
 		title: "Which model a request goes to",
-		example: "short questions → small model",
+		file: "router",
+		before: "large-model",
+		after: "small-model",
+		when: "for short questions",
 	},
 	{
 		icon: UserRound,
 		title: "When to hand over to a person",
-		example: "escalate every pro customer",
+		file: "handover",
+		before: "answer_directly",
+		after: "escalate_to_human",
+		when: "for pro customers",
 	},
 	{
 		icon: MessageSquareText,
 		title: "A new prompt or model at that step",
-		example: "system prompt v1 → v2",
+		file: "system_prompt",
+		before: "prompts/v1.txt",
+		after: "prompts/v2.txt",
+		when: "same model, new instructions",
 	},
 ];
 
@@ -61,20 +72,43 @@ const misfits = [
 	"Free-text answer quality",
 ];
 
+function DiffCard({ change }: { change: Change }) {
+	const Icon = change.icon;
+	return (
+		<li className="group flex min-w-0 flex-col overflow-hidden rounded-md border bg-card transition-colors hover:border-foreground/25">
+			<div className="flex items-start gap-3 p-4 pb-3">
+				<Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+				<p className="m-0 text-[0.95rem] leading-snug font-medium">
+					{change.title}
+				</p>
+			</div>
+			<div className="mt-auto border-t bg-muted/40 font-mono text-[0.72rem] leading-relaxed">
+				<p className="m-0 border-b px-3 py-1 text-muted-foreground">
+					{change.file}
+				</p>
+				<p className="m-0 flex gap-2 bg-bad-bg/70 px-3 py-0.5 text-bad">
+					<span className="select-none">-</span>
+					<span className="truncate">{change.before}</span>
+				</p>
+				<p className="m-0 flex gap-2 bg-ok-bg/80 px-3 py-0.5 text-ok">
+					<span className="select-none">+</span>
+					<span className="truncate">{change.after}</span>
+				</p>
+				<p className="m-0 px-3 pt-1 pb-2 text-muted-foreground">
+					<span className="select-none"># </span>
+					{change.when}
+				</p>
+			</div>
+		</li>
+	);
+}
+
 export function EvaluableCompact() {
 	return (
 		<div>
 			<ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
 				{changes.map((c) => (
-					<li key={c.title} className={cn(card, "flex flex-col gap-4")}>
-						<IconTile icon={c.icon} />
-						<div>
-							<p className="m-0 font-medium leading-snug">{c.title}</p>
-							<p className="mt-2 mb-0 font-mono text-xs text-muted-foreground">
-								{c.example}
-							</p>
-						</div>
-					</li>
+					<DiffCard key={c.title} change={c} />
 				))}
 			</ul>
 			<p className="mt-5 mb-0 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -84,7 +118,7 @@ export function EvaluableCompact() {
 				{misfits.map((m) => (
 					<span
 						key={m}
-						className="rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground"
+						className="rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground"
 					>
 						{m}
 					</span>
@@ -96,92 +130,105 @@ export function EvaluableCompact() {
 
 /* ── Evidence levels ─────────────────────────────────────────────────── */
 
-const levels: {
+type Rung = {
 	n: number;
 	name: string;
 	label: string;
-	strength: number;
+	height: string;
 	icon: LucideIcon;
-	need: string;
-}[] = [
+	have: string;
+	assumes: string;
+};
+
+/** Weakest to strongest, left to right: a staircase you climb by recording more. */
+const rungs: Rung[] = [
 	{
-		n: 1,
-		name: "Logged",
-		label: "Strongest",
-		strength: 3,
-		icon: Dices,
-		need: "A little exploration, recorded on the trace",
+		n: 3,
+		name: "Estimated",
+		label: "Weakest",
+		height: "h-14",
+		icon: Calculator,
+		have: "Only what your traces recorded",
+		assumes: "Nothing important is missing. Can't be checked, so you opt in.",
 	},
 	{
 		n: 2,
 		name: "Sampled",
 		label: "Strong",
-		strength: 2,
+		height: "h-24",
 		icon: RefreshCw,
-		need: "Traces that include the messages",
+		have: "Traces that include the messages",
+		assumes: "The model behaves as it did then. agentope checks.",
 	},
 	{
-		n: 3,
-		name: "Estimated",
-		label: "Weakest",
-		strength: 1,
-		icon: Calculator,
-		need: "Only what the traces recorded, once you agree to its assumption",
+		n: 1,
+		name: "Logged",
+		label: "Strongest",
+		height: "h-34",
+		icon: Dices,
+		have: "A little exploration, recorded on the trace",
+		assumes: "Only that the coin flips were recorded.",
 	},
 ];
 
-function Meter({ value }: { value: number }) {
-	return (
-		<span className="flex gap-1" role="img" aria-label={`${value} of 3`}>
-			{[1, 2, 3].map((i) => (
-				<i
-					key={i}
-					className={cn(
-						"h-1.5 w-6 rounded-full",
-						i <= value ? "bg-foreground/80" : "bg-border",
-					)}
-				/>
-			))}
-		</span>
-	);
-}
+const verdicts = [
+	{ kind: "ok" as const, text: "trust it" },
+	{ kind: "weak" as const, text: "use with care" },
+	{
+		kind: "unreliable" as const,
+		text: "no answer, and what to record to get one",
+	},
+];
 
 export function LevelsCompact() {
 	return (
 		<div>
-			<ol className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-3">
-				{levels.map((l) => (
-					<li key={l.n} className={cn(card, "flex flex-col gap-4")}>
-						<div className="flex items-center justify-between gap-3">
-							<IconTile icon={l.icon} />
-							<span className="flex flex-col items-end gap-1.5">
-								<Meter value={l.strength} />
+			<ol className="m-0 grid list-none grid-cols-1 items-end gap-x-4 gap-y-8 p-0 md:grid-cols-3">
+				{rungs.map((r, i) => {
+					const Icon = r.icon;
+					return (
+						<li key={r.n} className="flex min-w-0 flex-col">
+							<div className="mb-3 flex items-center justify-between gap-3">
+								<p className="m-0 flex items-baseline gap-2">
+									<span className="font-mono text-xs text-muted-foreground">
+										L{r.n}
+									</span>
+									<span className="font-medium">{r.name}</span>
+								</p>
 								<span className="font-mono text-[0.7rem] text-muted-foreground">
-									{l.label}
+									{r.label}
 								</span>
-							</span>
-						</div>
-						<div>
-							<p className="m-0 font-medium">
-								<span className="mr-1.5 font-mono text-xs text-muted-foreground">
-									L{l.n}
-								</span>
-								{l.name}
-							</p>
-							<p className="mt-1.5 mb-0 text-sm text-muted-foreground">
-								{l.need}
-							</p>
-						</div>
-					</li>
-				))}
+							</div>
+							<div
+								className={cn(
+									"relative flex items-end rounded-t-md border border-b-0 p-3",
+									r.height,
+								)}
+								style={{
+									background: `linear-gradient(135deg, color-mix(in srgb, var(--logo-from) ${18 + i * 14}%, transparent), color-mix(in srgb, var(--logo-to) ${18 + i * 14}%, transparent))`,
+								}}
+							>
+								<Icon className="size-5 text-foreground/70" />
+							</div>
+							<div className="flex flex-1 flex-col gap-2 rounded-b-md border bg-card p-4">
+								<p className="m-0 text-sm">{r.have}</p>
+								<p className="m-0 text-xs text-muted-foreground">
+									Assumes: {r.assumes}
+								</p>
+							</div>
+						</li>
+					);
+				})}
 			</ol>
-			<div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-				<p className="m-0 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-					Every answer ends with a verdict:
-					<Verdict kind="ok" />
-					<Verdict kind="weak" />
-					<Verdict kind="unreliable" />
-				</p>
+			<div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+				<ul className="m-0 flex list-none flex-wrap items-center gap-x-5 gap-y-2 p-0 text-sm text-muted-foreground">
+					{verdicts.map((v) => (
+						<li key={v.kind} className="flex items-center gap-2">
+							<Verdict kind={v.kind} />
+							{v.text}
+						</li>
+					))}
+				</ul>
 				<SiteLink
 					href="/docs/evidence-levels"
 					className="inline-flex items-center gap-1 text-sm underline-offset-4 hover:underline"

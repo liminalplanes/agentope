@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { DocPage } from "#/components/docs/doc-page";
 import { getDoc } from "#/lib/docs";
-import { site } from "#/lib/site";
+import { seo, site } from "#/lib/site";
 
 export const Route = createFileRoute("/docs/$slug")({
 	loader: ({ params }) => {
@@ -9,12 +9,11 @@ export const Route = createFileRoute("/docs/$slug")({
 	},
 	head: ({ params }) => {
 		const doc = getDoc(params.slug);
-		return {
-			meta: [
-				{ title: doc ? `${doc.title} · ${site.name}` : site.name },
-				{ name: "description", content: doc?.description ?? site.description },
-			],
-		};
+		return seo({
+			title: doc ? `${doc.title} · ${site.name}` : site.title,
+			description: doc?.description,
+			path: `/docs/${params.slug}`,
+		});
 	},
 	component: DocRoute,
 });
