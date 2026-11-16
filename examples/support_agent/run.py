@@ -170,9 +170,7 @@ def sampled() -> dict:
             matched += d["chosen"] == rule_action(d)
             if len(rows) < 8:
                 s = samples[d["decision_id"]]
-                rows.append(
-                    row(d, resolved, model_picks=s["counts"].get(d["chosen"], 0), n=s["n"])
-                )
+                rows.append(row(d, resolved, model_picks=s["counts"].get(d["chosen"], 0), n=s["n"]))
 
     return {
         "meta": meta(),
@@ -252,7 +250,9 @@ def explored() -> dict:
     print("explored: simulating two weeks of traces …", file=sys.stderr)
     simulate(path, explore=True, capture_content=False)
     steps = {
-        "check": agentope(f"agentope check --traces traces.otlp.json.gz \\\n    --context {CONTEXT}"),
+        "check": agentope(
+            f"agentope check --traces traces.otlp.json.gz \\\n    --context {CONTEXT}"
+        ),
         "import": agentope(
             f"agentope import --traces traces.otlp.json.gz \\\n    --context {CONTEXT} \\\n"
             "    -o decisions.jsonl"

@@ -43,10 +43,12 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 
 ## 1. Project setup
 
-- [ ] Confirm the name is free on PyPI (§14 Q5).
+- [x] PyPI name `agentope` was free (checked 2026-11-16).
+- [x] Release setup: Apache-2.0 `LICENSE`, package metadata (author Liminal Planes, URLs, classifiers, `py.typed`), `bump-my-version` config (pyproject, site version, Python API docs), `Makefile` (`make check`, `make release BUMP=…`), GitHub Actions `release.yml` (tag → test → build → PyPI via trusted publishing → GitHub release) and `ci.yml` (Python and site on every push and PR).
+- [ ] Before the first release: PyPI trusted publisher (pending) and the `pypi` GitHub environment.
 - [x] `pyproject.toml` via uv: package `agentope` 0.3.0 (src layout, `uv_build`), Python ≥ 3.14, numpy and scipy, console script `agentope`. `llm` extra with httpx and PyYAML.
 - [x] Layout: `src/agentope/{io,decisions,outcomes,targets,propensity_model,estimators,verdict,report,evaluate,helpers,traces,action_maps,importer,llm,sampling,checks,cli}.py`.
-- [~] Dev tooling: pytest and ruff. *Open:* type checking, CI.
+- [~] Dev tooling: pytest, ruff, CI. *Open:* type checking for the Python package.
 - [x] `argparse` CLI with exit codes `0` / `1` refused / `2` usage error.
 
 ---

@@ -1,13 +1,40 @@
 [project]
 name = "agentope"
 version = "0.3.0"
-description = "Offline evaluation of LLM agent decisions, without logprobs"
+description = "Evaluate changes to LLM agent decisions offline, from the traces you already keep. No logprobs."
 readme = "README.md"
 requires-python = ">=3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Liminal Planes", email = "contact@liminalplanes.com" }]
+keywords = [
+    "llm",
+    "agents",
+    "evaluation",
+    "off-policy evaluation",
+    "counterfactual",
+    "opentelemetry",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 dependencies = [
     "numpy>=2.5.5",
     "scipy>=1.18.1",
 ]
+
+[project.urls]
+Repository = "https://github.com/liminalplanes/agentope"
+Issues = "https://github.com/liminalplanes/agentope/issues"
+Changelog = "https://github.com/liminalplanes/agentope/releases"
 
 [project.scripts]
 agentope = "agentope.cli:main"
@@ -42,3 +69,23 @@ dev = [
     "pyyaml>=6.0.3",
     "ruff>=0.17.5",
 ]
+
+[tool.bumpversion]
+current_version = "0.3.0"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "name = \"agentope\"\nversion = \"{current_version}\""
+replace = "name = \"agentope\"\nversion = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "site/src/lib/site.ts"
+search = 'version: "{current_version}"'
+replace = 'version: "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "site/src/content/docs/python-api.mdx"
+search = "current signatures (v{current_version})"
+replace = "current signatures (v{new_version})"

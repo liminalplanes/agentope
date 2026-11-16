@@ -98,9 +98,7 @@ def _content(ctx: dict, conversation: str, tier: str, user: str, llm_choice: str
     }
 
 
-def simulate(
-    out_dir: Path, *, explore: bool, capture_content: bool, seed: int = 7
-) -> None:
+def simulate(out_dir: Path, *, explore: bool, capture_content: bool, seed: int = 7) -> None:
     rng = random.Random(seed)
     traces = gzip.open(out_dir / "traces.otlp.json.gz", "wt", encoding="utf-8")  # noqa: SIM115
     outcomes = (out_dir / "helpdesk.csv").open("w", newline="", encoding="utf-8")  # noqa: SIM115
@@ -156,7 +154,12 @@ def simulate(
         ms = timedelta(milliseconds=1)
         spans = [
             _span(
-                trace_id, ids[0], None, "invoke_agent support-agent", t0, t0 + 2600 * ms,
+                trace_id,
+                ids[0],
+                None,
+                "invoke_agent support-agent",
+                t0,
+                t0 + 2600 * ms,
                 {
                     "gen_ai.operation.name": "invoke_agent",
                     "gen_ai.agent.name": "support-agent",
@@ -171,7 +174,11 @@ def simulate(
         if chosen != "__none__":
             spans.append(
                 _span(
-                    trace_id, ids[2], ids[0], f"execute_tool {chosen}", t0 + 1000 * ms,
+                    trace_id,
+                    ids[2],
+                    ids[0],
+                    f"execute_tool {chosen}",
+                    t0 + 1000 * ms,
                     t0 + 1450 * ms,
                     {
                         "gen_ai.operation.name": "execute_tool",
@@ -182,7 +189,12 @@ def simulate(
             )
         spans.append(
             _span(
-                trace_id, ids[3], ids[0], f"chat {MODEL}", t0 + 1500 * ms, t0 + 2550 * ms,
+                trace_id,
+                ids[3],
+                ids[0],
+                f"chat {MODEL}",
+                t0 + 1500 * ms,
+                t0 + 2550 * ms,
                 {
                     "gen_ai.operation.name": "chat",
                     "gen_ai.request.model": MODEL,

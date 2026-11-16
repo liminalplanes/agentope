@@ -8,7 +8,7 @@ Offline evaluation of LLM agent decisions, without logprobs.
 point** (which tool to call, which model to route to, which prompt variant to
 use) from logs you already have. Every number comes with its evidence level,
 diagnostics, a verdict (`ok` / `weak` / `unreliable`) and the assumptions it
-rests on. See [`spec.md`](spec.md) for the design and [`progress.md`](progress.md)
+rests on. See [`spec.md`](https://github.com/liminalplanes/agentope/blob/main/spec.md) for the design and [`progress.md`](https://github.com/liminalplanes/agentope/blob/main/progress.md)
 for what is implemented.
 
 **Status: v0.3.** Level 1 (logged propensities, including ε-exploration),
@@ -16,7 +16,7 @@ Level 2 (sampling the logging model on stored inputs), Level 3 (estimated
 propensities), LLM target policies, `check` and import of OpenTelemetry traces
 (GenAI and OpenInference conventions) are available. Level 4 and the
 doubly-robust estimator are next. The project site and documentation live in
-[`site/`](site/README.md) (`cd site && npm install && npm run dev`).
+[`site/`](https://github.com/liminalplanes/agentope/blob/main/site/README.md) (`cd site && npm install && npm run dev`).
 
 ## Install
 

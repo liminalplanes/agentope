@@ -16,26 +16,106 @@ P_PRO = 0.25
 
 # How the model in production chooses (before exploration), as relative weights.
 _MODEL = {
-    ("refund", True): {"lookup_order": 45, "search_kb": 20, "escalate_to_human": 25, "__none__": 10},
-    ("refund", False): {"lookup_order": 10, "search_kb": 40, "escalate_to_human": 30, "__none__": 20},
-    ("order_status", True): {"lookup_order": 55, "search_kb": 20, "escalate_to_human": 5, "__none__": 20},
-    ("order_status", False): {"lookup_order": 15, "search_kb": 35, "escalate_to_human": 10, "__none__": 40},
-    ("product_question", True): {"lookup_order": 5, "search_kb": 60, "escalate_to_human": 5, "__none__": 30},
-    ("product_question", False): {"lookup_order": 5, "search_kb": 60, "escalate_to_human": 5, "__none__": 30},
-    ("account", True): {"lookup_order": 5, "search_kb": 30, "escalate_to_human": 40, "__none__": 25},
-    ("account", False): {"lookup_order": 5, "search_kb": 30, "escalate_to_human": 40, "__none__": 25},
+    ("refund", True): {
+        "lookup_order": 45,
+        "search_kb": 20,
+        "escalate_to_human": 25,
+        "__none__": 10,
+    },
+    ("refund", False): {
+        "lookup_order": 10,
+        "search_kb": 40,
+        "escalate_to_human": 30,
+        "__none__": 20,
+    },
+    ("order_status", True): {
+        "lookup_order": 55,
+        "search_kb": 20,
+        "escalate_to_human": 5,
+        "__none__": 20,
+    },
+    ("order_status", False): {
+        "lookup_order": 15,
+        "search_kb": 35,
+        "escalate_to_human": 10,
+        "__none__": 40,
+    },
+    ("product_question", True): {
+        "lookup_order": 5,
+        "search_kb": 60,
+        "escalate_to_human": 5,
+        "__none__": 30,
+    },
+    ("product_question", False): {
+        "lookup_order": 5,
+        "search_kb": 60,
+        "escalate_to_human": 5,
+        "__none__": 30,
+    },
+    ("account", True): {
+        "lookup_order": 5,
+        "search_kb": 30,
+        "escalate_to_human": 40,
+        "__none__": 25,
+    },
+    ("account", False): {
+        "lookup_order": 5,
+        "search_kb": 30,
+        "escalate_to_human": 40,
+        "__none__": 25,
+    },
 }
 
 # Probability that the ticket is resolved, by situation and first action.
 _RESOLVED = {
-    ("refund", True): {"lookup_order": 0.78, "escalate_to_human": 0.72, "search_kb": 0.40, "__none__": 0.25},
-    ("refund", False): {"lookup_order": 0.30, "escalate_to_human": 0.62, "search_kb": 0.45, "__none__": 0.35},
-    ("order_status", True): {"lookup_order": 0.90, "escalate_to_human": 0.60, "search_kb": 0.45, "__none__": 0.30},
-    ("order_status", False): {"lookup_order": 0.35, "escalate_to_human": 0.55, "search_kb": 0.48, "__none__": 0.50},
-    ("product_question", True): {"search_kb": 0.80, "__none__": 0.62, "escalate_to_human": 0.55, "lookup_order": 0.20},
-    ("product_question", False): {"search_kb": 0.80, "__none__": 0.62, "escalate_to_human": 0.55, "lookup_order": 0.20},
-    ("account", True): {"escalate_to_human": 0.82, "search_kb": 0.45, "__none__": 0.35, "lookup_order": 0.15},
-    ("account", False): {"escalate_to_human": 0.82, "search_kb": 0.45, "__none__": 0.35, "lookup_order": 0.15},
+    ("refund", True): {
+        "lookup_order": 0.78,
+        "escalate_to_human": 0.72,
+        "search_kb": 0.40,
+        "__none__": 0.25,
+    },
+    ("refund", False): {
+        "lookup_order": 0.30,
+        "escalate_to_human": 0.62,
+        "search_kb": 0.45,
+        "__none__": 0.35,
+    },
+    ("order_status", True): {
+        "lookup_order": 0.90,
+        "escalate_to_human": 0.60,
+        "search_kb": 0.45,
+        "__none__": 0.30,
+    },
+    ("order_status", False): {
+        "lookup_order": 0.35,
+        "escalate_to_human": 0.55,
+        "search_kb": 0.48,
+        "__none__": 0.50,
+    },
+    ("product_question", True): {
+        "search_kb": 0.80,
+        "__none__": 0.62,
+        "escalate_to_human": 0.55,
+        "lookup_order": 0.20,
+    },
+    ("product_question", False): {
+        "search_kb": 0.80,
+        "__none__": 0.62,
+        "escalate_to_human": 0.55,
+        "lookup_order": 0.20,
+    },
+    ("account", True): {
+        "escalate_to_human": 0.82,
+        "search_kb": 0.45,
+        "__none__": 0.35,
+        "lookup_order": 0.15,
+    },
+    ("account", False): {
+        "escalate_to_human": 0.82,
+        "search_kb": 0.45,
+        "__none__": 0.35,
+        "lookup_order": 0.15,
+    },
 }
 
 
