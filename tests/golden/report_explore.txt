@@ -1,0 +1,24 @@
+agentope · tool_choice · target: tests.sim.best_action_target
+────────────────────────────────────────────────────────────
+Evidence level   L1 Logged (ε-exploration)
+Decisions        472   (rewarded 472 · expired 0 · 0.0%)
+                 1,028 without logged propensities excluded
+
+Logging policy   0.487  realized mean outcome (all 1,500 decisions)
+Target policy    0.775  SNIPS   (IPS 0.907)
+Difference      +0.289  95% CI [+0.220, +0.350]
+
+Diagnostics      ESS 138 (29% of n) · max weight 4 · min propensity 0.25
+                 support violations 0
+
+Verdict          ok
+
+Warnings:
+  • 1,028 of 1,500 decisions have no logged propensity and were excluded; the estimate covers only the included decisions
+
+This estimate assumes:
+  • Logged propensities are the probabilities actually used when deciding
+  • Whether a decision was explored did not depend on its context (true when agentope.explore made the coin flip)
+  • Which tool is called matters, not its arguments or wording (action map: tool)
+  • Only tool_choice changes; later steps behave as they did under the logging policy
+  • An outcome missing within 1d means outcome = 0
