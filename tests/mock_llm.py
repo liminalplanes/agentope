@@ -4,6 +4,8 @@
 actions come back as tool calls, ``__none__`` as a plain text answer.
 """
 
+from __future__ import annotations
+
 import json
 import random
 import threading

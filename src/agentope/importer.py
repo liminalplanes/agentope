@@ -18,6 +18,8 @@ When input content was captured, the model input is written as a
 chat-completions request body, for Level 2 replay.
 """
 
+from __future__ import annotations
+
 import json
 import math
 import os

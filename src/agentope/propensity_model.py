@@ -8,6 +8,8 @@ choice. Folds are formed by join key, so decisions that share an outcome stay
 in the same fold. Deterministic for a fixed seed.
 """
 
+from __future__ import annotations
+
 import math
 import random
 from collections.abc import Mapping, Sequence

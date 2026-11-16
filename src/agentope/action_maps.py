@@ -1,5 +1,7 @@
 """Action maps: turn what the agent did into an action id (spec §4.3)."""
 
+from __future__ import annotations
+
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass

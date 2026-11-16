@@ -15,6 +15,8 @@ and are not in ``counts``. A rerun skips lines whose decision, policy, model,
 parameters, request and action map are unchanged, so an interrupted run resumes.
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import random
@@ -296,7 +298,7 @@ def is_llm_target_file(target: object) -> bool:
     if p.suffix == ".json":
         try:
             return json.loads(p.read_text()).get("type") == "llm"
-        except json.JSONDecodeError, AttributeError:
+        except (json.JSONDecodeError, AttributeError):
             return False
     return True
 

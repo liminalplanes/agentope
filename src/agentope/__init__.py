@@ -1,5 +1,7 @@
 """agentope: offline evaluation of LLM agent decisions, without logprobs."""
 
+from __future__ import annotations
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:

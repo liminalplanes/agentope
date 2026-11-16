@@ -14,6 +14,8 @@ Two switches set the scenario:
   tracing tools record them, so the model can be asked again later (Level 2).
 """
 
+from __future__ import annotations
+
 import csv
 import gzip
 import json

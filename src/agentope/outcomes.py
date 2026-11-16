@@ -1,5 +1,7 @@
 """Outcomes and the outcome join (spec §6.2)."""
 
+from __future__ import annotations
+
 import csv
 import math
 from bisect import bisect_left

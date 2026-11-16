@@ -1,5 +1,7 @@
 """Policies the support team wants to evaluate before changing the agent."""
 
+from __future__ import annotations
+
 
 def lookup_when_order_number(context, candidates):
     """Look up the order whenever the customer gives an order number."""

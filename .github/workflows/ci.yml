@@ -11,11 +11,15 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.14"
+          python-version: ${{ matrix.python }}
       - run: uv sync --all-extras --locked
       - run: uv run ruff check src tests examples
       - run: uv run ruff format --check src tests examples

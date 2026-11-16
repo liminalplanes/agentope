@@ -7,6 +7,8 @@ that action. Every number here is made up, but because the world is known exactl
 so is the true effect of any policy.
 """
 
+from __future__ import annotations
+
 ACTIONS = ["search_kb", "lookup_order", "escalate_to_human", "__none__"]
 SAFE = ["search_kb", "lookup_order", "__none__"]  # never escalate at random: people are expensive
 

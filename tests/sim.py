@@ -5,6 +5,8 @@ Contexts: intent ∈ {refund, status, other} (uniform) and pro ∈ {True, False}
 Because the context distribution is finite, every policy's true value is exact.
 """
 
+from __future__ import annotations
+
 import random
 from collections.abc import Callable, Mapping
 

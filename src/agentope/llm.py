@@ -6,6 +6,8 @@ extra (``httpx``). The endpoint comes from ``--base-url`` / ``base_url``, else
 or ``OPENAI_API_KEY`` (optional for local servers).
 """
 
+from __future__ import annotations
+
 import contextlib
 import os
 import random

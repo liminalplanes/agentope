@@ -1,5 +1,7 @@
 """Decision records (spec §6.1)."""
 
+from __future__ import annotations
+
 import math
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass

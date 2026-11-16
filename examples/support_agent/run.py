@@ -14,6 +14,8 @@ Every command and its output is saved to site/src/content/example/, which the we
 shows as-is, together with the true answers (known because the world is simulated).
 """
 
+from __future__ import annotations
+
 import contextlib
 import gzip
 import io

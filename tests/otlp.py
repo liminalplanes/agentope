@@ -1,5 +1,7 @@
 """Build OTLP JSON trace exports for tests."""
 
+from __future__ import annotations
+
 import gzip
 import itertools
 import json

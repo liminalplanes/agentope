@@ -1,5 +1,7 @@
 """Logging helpers that produce Level 1 data (spec §7.3)."""
 
+from __future__ import annotations
+
 import json
 import random
 import threading

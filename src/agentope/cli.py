@@ -3,6 +3,8 @@
 Exit codes: 0 report produced · 1 refused (a guard fired, or sampling declined) · 2 usage error.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import sys

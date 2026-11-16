@@ -5,6 +5,8 @@ chooses (world.model_policy), reading the situation from the messages it is sent
 Answers are seeded from the request, so a run is reproducible.
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import random

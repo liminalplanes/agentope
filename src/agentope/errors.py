@@ -1,5 +1,7 @@
 """Exceptions raised by agentope."""
 
+from __future__ import annotations
+
 
 class AgentopeError(Exception):
     """Base class for agentope errors."""

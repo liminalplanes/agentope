@@ -1,5 +1,7 @@
 """Target policies: Python callables and target.jsonl files (spec §4.4, §6.3)."""
 
+from __future__ import annotations
+
 import importlib
 import importlib.util
 import sys

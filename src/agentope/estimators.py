@@ -4,6 +4,8 @@ No weight clipping: clipping trades bias for variance silently. Problems are
 reported through diagnostics and the verdict instead.
 """
 
+from __future__ import annotations
+
 import math
 from collections.abc import Sequence
 

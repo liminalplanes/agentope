@@ -6,6 +6,8 @@ document or a list of them, optionally gzipped. Span kinds are recognized under
 both the OpenTelemetry GenAI conventions (``gen_ai.*``) and OpenInference.
 """
 
+from __future__ import annotations
+
 import json
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
@@ -108,7 +110,7 @@ def attributes(items: object) -> dict[str, Any]:
 def _seconds(nanos: object, where: str) -> float:
     try:
         return int(nanos) / 1e9  # type: ignore[call-overload]
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         raise DataError(f"{where}: span has no valid startTimeUnixNano") from None
 
 

@@ -1,5 +1,7 @@
 """`evaluate`: estimate a target policy's mean outcome on logged decisions."""
 
+from __future__ import annotations
+
 import math
 import statistics
 from collections import Counter

@@ -1,5 +1,7 @@
 """File reading, timestamps and durations."""
 
+from __future__ import annotations
+
 import gzip
 import hashlib
 import json
