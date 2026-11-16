@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  The link-preview image (public/og.png, 1200×630): the logo, in the dark theme.
+  The link-preview image (public/og.png, 1200×630): the header logo at 5×, on the dark theme background.
   Regenerate after editing (run from site/):
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
       --hide-scrollbars --allow-file-access-from-files --window-size=1200,630 \
@@ -24,35 +24,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
     overflow: hidden;
   }
-  /* A faint glow of the logo's gradient behind the mark. */
-  body::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 900px;
-    height: 900px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(125, 143, 240, 0.12), rgba(79, 201, 143, 0.05) 40%, transparent 68%);
-  }
+  /* The header lockup scaled up 5×: a 22px mark beside 16px semibold text. */
   .logo {
-    position: relative;
     display: flex;
     align-items: center;
-    gap: 36px;
-    font-size: 132px;
+    gap: 16px; /* the mark carries its own side bearing */
+    font-size: 80px;
     font-weight: 600;
-    letter-spacing: -0.045em;
+    letter-spacing: -0.025em;
   }
 </style>
 </head>
 <body>
   <div class="logo">
-    <svg width="150" height="150" viewBox="0 0 22 22" aria-hidden="true">
+    <svg width="110" height="110" viewBox="0 0 22 22" aria-hidden="true">
       <defs>
         <linearGradient id="g" x1="3" y1="5" x2="19" y2="19" gradientUnits="userSpaceOnUse">
           <stop offset="0" stop-color="#7d8ff0"/>
