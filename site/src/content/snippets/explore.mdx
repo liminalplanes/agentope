@@ -1,0 +1,14 @@
+```python
+# In your agent: explore 5% of tool choices within safe options,
+# and keep the coin flip on the model span.
+import agentope as ao
+
+tool = ao.explore(
+    "tool_choice",
+    llm_choice=tool_name,
+    safe_candidates=["search_kb", "lookup_order", "__none__"],
+    epsilon=0.05,
+    join_key=conversation_id,
+    log=lambda r: span.set_attributes(ao.span_attributes(r)),
+)
+```

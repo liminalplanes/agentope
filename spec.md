@@ -212,7 +212,45 @@ the tool reports that rather than an estimate.
 
 **Cost:** `decisions × N × (1 + [target is LLM])` model calls. Default
 `N = 32`. `agentope check` prints the estimated call count. `--sample 2000`
-evaluates a random subset of decisions.
+evaluates a random subset of decisions. `--n-per-request` asks for several
+samples per call through the `n` parameter where the server supports it (vLLM
+does), dividing the number of requests.
+
+**Small N inflates weights.** When the logged choice never comes up in N
+samples, its smoothed propensity is `α / (N + α·k)` (0.015 at N = 32, k = 4),
+which can be far below the truth and gives a large weight. In simulation, a
+policy with true propensities around 0.11 got weights up to 68 at N = 32,
+pulling ESS under 10% of n. The report flags it ("decisions with < 3 matching
+samples", ESS, max weight) and suggests a larger N. N = 64 removed the
+problem there. This is evidence for open questions 1 and 2 (§14).
+
+**`samples.jsonl`** (written by `sample`, read by `eval --samples`): one line
+per (decision, policy), with raw counts; smoothing happens at evaluation.
+
+```json
+{"decision_id": "conv-8812:3", "policy": "logging", "model": "qwen2.5-7b-instruct",
+ "params": {"temperature": 0.7}, "input_sha256": "…", "stored_input_sha256": "…",
+ "action_map": "tool", "n": 32, "counts": {"lookup_order": 21, "search_kb": 7, "__none__": 4},
+ "failed": 0, "response_models": {"qwen2.5-7b-instruct": 32}}
+```
+
+`policy` is `logging` or an LLM target's name. `input_sha256` hashes the
+request actually sent; `stored_input_sha256` the stored input, checked against
+the decision's `input_sha256` from import. `failed` samples (errors after
+retries, unparseable responses) are excluded from `counts`. A rerun skips
+lines whose decision, policy, model, parameters, request, action map and N are
+unchanged, so an interrupted run resumes; the latest line wins.
+
+**LLM targets.** Their probabilities are the raw sample frequencies over the
+candidates (no smoothing: they are never divided by). Samples that pick an
+action outside the candidates count as support violations.
+
+**Replay diagnostics.** Reproduction rate (decisions whose logged choice came
+up at least once; below 50% gives `weak`), decisions with fewer than 3
+matching samples, the share of samples answered by a different model than
+`logging_config` names, stored inputs whose hash changed since import, failed
+samples, off-candidate samples, and a warning when every sample on every
+decision was the same answer (no overlap).
 
 ### 5.3 Level 3 — Estimated
 
@@ -369,12 +407,22 @@ agentope check --traces traces.otlp.json --decision-point tool_choice
 agentope import --traces traces.otlp.json --map tool -o decisions.jsonl
 
 # 3. (Level 2 only) estimate propensities by sampling — the only step that calls an LLM
-agentope sample decisions.jsonl --n 32 --target target.yaml -o samples.jsonl
+agentope sample decisions.jsonl --n 32 --target target.yaml -o samples.jsonl \
+                --base-url http://localhost:8000/v1
 
 # 4. Evaluate
 agentope eval decisions.jsonl --outcomes outcomes.csv --horizon 7d \
-              --target target.yaml        # or target.jsonl
+              --samples samples.jsonl --target target.yaml        # or target.jsonl
 ```
+
+`sample` prints the number of requests and asks before calling the LLM unless
+`--yes` (and refuses without `--yes` when not run in a terminal). Its other
+options: `--model` (the logging model's name on this endpoint, if it differs),
+`--concurrency` (8), `--n-per-request`, `--sample K` (random subset, seeded by
+`--seed`), `--no-logging` (only the targets), `--decision-point`. The endpoint
+is `--base-url` or `AGENTOPE_BASE_URL`; the key `AGENTOPE_API_KEY` or
+`OPENAI_API_KEY`. Rate limits and server errors are retried with backoff
+(honouring `Retry-After`).
 
 `eval` also takes `--absent-means-default` (§6.2), `--level`,
 `--accept-unverifiable`, `--decision-point` (required when a file covers several),
@@ -427,14 +475,21 @@ print(report)          # human summary
 report.to_json()       # machine-readable
 ```
 
-An LLM target in Python is a function from stored input to model request:
+An LLM target in Python is an `LLMPolicy`: either simple overrides (`model`,
+`system_prompt`, `temperature`, `top_p`, `max_tokens`, `tools`) or a `render`
+function from stored input to request body. Sampling stays an explicit step,
+so evaluation over its files is deterministic:
 
 ```python
 def v2(stored_input):
     return {**stored_input, "messages": swap_system(stored_input["messages"], V2_PROMPT)}
 
-report = ao.evaluate(decisions, outcomes=..., horizon="7d",
-                     target=ao.LLMPolicy(render=v2, model="provider/model-2026-11-01", n=32))
+policy = ao.LLMPolicy("v2", render=v2, model="provider/model-2026-11-01")
+ao.sample(decisions, output="samples.jsonl", n=32, targets=[policy],
+          base_url="http://localhost:8000/v1")
+report = ao.evaluate(decisions, outcomes=..., horizon="7d", target=policy,
+                     samples="samples.jsonl")
+print(ao.check(decisions))      # readiness report
 ```
 
 ### 7.3 Logging helpers (to reach Level 1)
@@ -557,7 +612,11 @@ reproducibility.
 
 ## 10. Readiness report (`agentope check`)
 
-Runs on traces alone, with no outcomes, no LLM calls and no target policy.
+Runs on traces (`--traces`, imported in memory) or a decisions file, with no
+outcomes and no LLM calls. `--target target.yaml` adds the LLM target's
+sampling cost; `--json` prints it machine-readable. Whether the logging model
+is still available is not checked here (that would need a call); `sample`
+finds out.
 
 ```
 tool_choice · 4,812 decisions found in traces
@@ -627,7 +686,7 @@ front.
 |---|---|
 | **v0.1** | `decisions.jsonl` + outcomes join; L1 and L3 with guard; SNIPS/IPS; diagnostics, verdicts, report; Python callable and `target.jsonl` targets; `randomize` / `explore` helpers |
 | **v0.2** | OTLP import (GenAI + OpenInference), `eval --traces`, `agentope.*` span attributes; `--absent-means-default` |
-| **v0.3** | L2: `sample` with an OpenAI-compatible endpoint, caching, cost estimates; LLM target policies; `check` |
+| **v0.3** | L2: `sample` with an OpenAI-compatible endpoint (`agentope[llm]`), caching and resume, cost estimates; replay diagnostics; LLM target policies (`target.yaml`, `LLMPolicy`); `check` |
 | **v0.4** | DR; L3 break-even Γ; L4 with calibration display |
 
 ---

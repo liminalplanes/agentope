@@ -1,0 +1,63 @@
+---
+title: From traces
+description: Import OpenTelemetry GenAI or OpenInference exports. Prompts and message text are optional.
+section: Guides
+order: 1
+---
+
+If your agent is traced with OpenTelemetry, agentope reads an OTLP JSON export directly: the Collector's file-exporter format (one request per line) or a single JSON document, optionally gzipped. It understands the **OpenTelemetry GenAI** conventions (`gen_ai.*`) and **OpenInference**.
+
+```sh
+agentope import --traces traces.otlp.json.gz \
+    --context intent=app.intent,tier=app.customer_tier -o decisions.jsonl
+```
+
+```text
+traces.otlp.json.gz · 5,000 traces · 17,692 spans
+tool_choice      5,000 decisions
+  chosen         3,846 from execute_tool spans · 1,154 __none__ (no tool call)
+  candidates     from agentope.candidates on 5,000/5,000
+  propensities   1,012 explored (ε=0.2) · 3,988 without
+  context        intent, tier
+  stored inputs  none (content capture off) → Levels 1 and 3 available
+wrote decisions.jsonl
+```
+
+Or in one step: `agentope eval --traces traces.otlp.json.gz --context … --outcomes … --target …`.
+
+## How decisions are found
+
+Each model span (`gen_ai.operation.name` `chat`, `text_completion` or `generate_content`, or OpenInference kind `LLM`) is a candidate decision. By default only the **first model call of each agent run** is used: one decision per turn, made before any tool result. `--decisions all` takes every call and adds an `llm_call_index` feature.
+
+What was chosen, in order of preference:
+
+1. an `agentope.chosen` attribute, written by `ao.span_attributes`;
+2. the `execute_tool` / `TOOL` spans that follow the model span, whenever the export has tool spans (they show what actually ran);
+3. tool calls in the response content, when content capture is on;
+4. the finish reason, which can only say "no tool call".
+
+Spans where none of these settle it are skipped and counted in the summary.
+
+## Candidates, context and join key
+
+- **Candidates**: `agentope.candidates`, else the tool definitions on the request plus `__none__`, else every action seen in the data (flagged, and printed as an assumption).
+- **Context**: `--context name=attribute,…`, looked up on the model span, then its ancestors, then the resource.
+- **Join key**: `--join-key <attribute>`, else `gen_ai.conversation.id`, then `session.id`, then the trace id.
+
+## Keeping exploration in your traces
+
+Let `explore` write its coin flip onto the model span, and import reads it back:
+
+```python
+ao.explore(..., log=lambda record: span.set_attributes(ao.span_attributes(record)))
+```
+
+That sets `agentope.chosen`, `agentope.explored`, `agentope.propensity`, `agentope.candidates`, `agentope.safe_candidates`, `agentope.epsilon`, `agentope.llm_choice` and `agentope.decision_id`.
+
+## Stored inputs
+
+When content capture was on, import writes each model input (system instructions, messages, tool calls and results, tool definitions, sampling parameters) as an OpenAI-compatible chat-completions request body to `inputs/<decision_id>.json`, ready for [Level 2](/docs/sampling).
+
+<Callout title="No content? Still useful">
+Without message content, Levels 1 and 3 still work from span attributes and tool spans. Only Level 2 and LLM targets (prompt or model changes) need stored inputs.
+</Callout>

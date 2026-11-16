@@ -1,0 +1,76 @@
+---
+title: Sampling the model
+description: Level 2 without any randomization, and how to test a prompt or model change.
+section: Guides
+order: 2
+---
+
+If your traces captured message content and you can still run the same model, agentope estimates propensities by asking the model again on each stored input. It works with any OpenAI-compatible endpoint: vLLM, Ollama, llama.cpp's server or a hosted API.
+
+```sh
+# What's possible, and how many calls sampling would take
+agentope check decisions.jsonl
+
+# The only step that calls an LLM
+agentope sample decisions.jsonl -o samples.jsonl --n 64 \
+    --base-url http://localhost:8000/v1
+
+agentope eval decisions.jsonl --samples samples.jsonl \
+    --outcomes outcomes.csv --horizon 7d --target policy.py:lookup_first
+```
+
+`sample` shows the number of requests and asks before starting (pass `--yes` in scripts). It appends to `samples.jsonl` and skips what's already there, so an interrupted run resumes. Rate limits and server errors are retried with backoff.
+
+## Testing a prompt or model change
+
+Describe the change as an LLM target and sample it too:
+
+```yaml
+# v2.yaml
+type: llm
+name: v2
+model: qwen2.5-7b-instruct
+system_prompt: prompts/v2.txt     # replaces the system message
+temperature: 0.7
+tools: unchanged                  # or a JSON file of tool definitions
+```
+
+```sh
+agentope sample decisions.jsonl -o samples.jsonl --target v2.yaml --base-url …
+agentope eval decisions.jsonl --samples samples.jsonl --target v2.yaml …
+```
+
+Anything beyond the model, system prompt, sampling parameters and tools needs the Python API:
+
+```python
+def v2(body):
+    return {**body, "messages": my_rewrite(body["messages"])}
+
+policy = ao.LLMPolicy("v2", render=v2)
+ao.sample("decisions.jsonl", output="samples.jsonl", targets=[policy],
+          base_url="http://localhost:8000/v1")
+report = ao.evaluate("decisions.jsonl", outcomes="outcomes.csv", horizon="7d",
+                     target=policy, samples="samples.jsonl")
+```
+
+The target's probabilities are its sample frequencies. Samples that choose an action outside the candidates count as support violations.
+
+## Replay checks
+
+The report checks how faithfully the model replays what happened:
+
+- **reproduction rate**: decisions whose logged choice came up again (below 50% gives <Verdict kind="weak" />);
+- decisions where the logged choice came up fewer than 3 times;
+- samples answered by a different model than the one that logged;
+- stored inputs that changed since import;
+- failed and off-candidate samples, and a warning when every sample was the same answer (no overlap).
+
+## How many samples
+
+<Callout kind="warning" title="N = 32 can be too few">
+When the logged choice never comes up in N samples, its smoothed propensity is `α / (N + α·k)`, about 0.015 at N = 32 with four options, which can be far below the truth and gives a very large weight. In simulation this pushed the effective sample under 10% at N = 32; N = 64 fixed it. If the report lists decisions with fewer than 3 matching samples, sample more.
+</Callout>
+
+## Self-hosted open models
+
+Self-hosting is the easiest case for Level 2: sampling is cheap, the model is never retired, and you can pin the exact weights. Keep the serving setup the same as when logging; some servers' output varies slightly with batch size.

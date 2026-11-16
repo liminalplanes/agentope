@@ -1,0 +1,124 @@
+---
+title: Python API
+description: The functions and classes exported by `agentope`.
+section: Reference
+order: 2
+---
+
+```python
+import agentope as ao
+```
+
+<Callout title="Hand-written for now">
+This page is written by hand from the current signatures (v0.3.0). It will be generated from the docstrings later.
+</Callout>
+
+## evaluate
+
+```python
+ao.evaluate(
+    decisions, *, outcomes, horizon, target,
+    level=None, accept_unverifiable=False,
+    default_reward=0.0, absent_means_default=False,
+    action_map=None, decision_point=None,
+    samples=None, alpha=0.5,
+    seed=0, n_bootstrap=2000, folds=5,
+    thresholds=None,
+) -> Report
+```
+
+Estimates how `target` would have done on the logged `decisions`.
+
+- `decisions`: a decisions.jsonl path, a list of decision dicts, or the result of `import_traces`.
+- `outcomes`: a JSONL or CSV path, or a list of `{"join_key", "t", "value"}` dicts.
+- `horizon`: `"7d"`, `"12h"`, `"30m"` or seconds.
+- `target`: a callable `(context, candidates) -> {action: probability}`, a `target.jsonl` path, `"module:function"`, `"file.py:function"`, or an LLM target (`LLMPolicy` or a `target.yaml` path) read from `samples`.
+- `level`: `1`, `2` or `3`; by default the strongest the data supports.
+
+Raises `RefusedError` when a guard fires and `DataError` for invalid input.
+
+### Report
+
+`print(report)` gives the text report; `report.to_json()` and `report.to_dict()` give the same content with stable field names: `level`, `estimates`, `diagnostics`, `verdict`, `verdict_reasons`, `assumptions`, `how_to_improve`, `warnings`, `inputs`. Shortcuts: `report.difference`, `report.ci95`, `report.verdict`.
+
+### VerdictThresholds
+
+```python
+ao.VerdictThresholds(
+    unreliable_support_mass=0.01, unreliable_min_ess=50, unreliable_expired_share=0.5,
+    weak_ess_share=0.1, weak_expired_share=0.2, weak_reproduction_rate=0.5,
+)
+```
+
+## import_traces
+
+```python
+ao.import_traces(
+    path, *, decision_point="tool_choice", action_map="tool",
+    context=None, join_key=None, decisions="first",
+    inputs_dir=None, inputs_base=None,
+) -> ImportedDecisions
+```
+
+Reads an OTLP JSON export. `context` is `"name=attribute,…"`, a `{name: attribute}` mapping, or a list. Returns a list of decision dicts with an import `summary` attached (`result.summary.render()`). See [From traces](/docs/traces).
+
+## sample
+
+```python
+ao.sample(
+    decisions, *, output, n=32, targets=(), include_logging=True,
+    base_url=None, model=None, concurrency=8, n_per_request=1,
+    subset=None, seed=0, decision_point=None, base=None, endpoint_options=None,
+) -> SampleSummary
+```
+
+Samples the logging model, and any `targets` (`LLMPolicy` objects or `target.yaml` paths), on each stored input and appends to `output`. `endpoint_options` go to the HTTP client: `timeout`, `max_retries`, `backoff`.
+
+## LLMPolicy
+
+```python
+ao.LLMPolicy(
+    name, *, render=None, model=None, system_prompt=None,
+    temperature=None, top_p=None, max_tokens=None, tools=None,
+)
+```
+
+An LLM target. Either give `render(stored_input) -> request body`, or the simple overrides.
+
+## check
+
+```python
+ao.check(decisions, *, n_samples=32, llm_target=False, decision_point=None) -> CheckReport
+```
+
+The readiness report. `str(report)` for text, `report.to_dict()` for data.
+
+## Logging helpers
+
+```python
+ao.explore(decision_point, llm_choice, safe_candidates, epsilon, *,
+           join_key, log, candidates=None, context=None,
+           decision_id=None, t=None, rng=None) -> str
+
+ao.randomize(decision_point, candidates, probs, *,
+             join_key, log, context=None,
+             decision_id=None, t=None, rng=None) -> str
+
+ao.span_attributes(record) -> dict
+```
+
+Both return the action to take. `log` is a path, a file object, or a callable receiving the record; `span_attributes` turns that record into `agentope.*` span attributes.
+
+## Loading files
+
+```python
+ao.load_decisions(source) -> list[Decision]
+ao.load_outcomes(source) -> list[Outcome]
+ao.load_samples(source) -> Samples
+```
+
+## Errors
+
+- `ao.DataError`: invalid input or arguments (CLI exit code 2).
+- `ao.RefusedError`: a guard refused to run (exit code 1).
+- `ao.AgentopeError`: the base class.

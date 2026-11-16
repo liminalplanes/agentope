@@ -16,6 +16,8 @@ class VerdictThresholds:
     """Weak when ESS is below this share of n."""
     weak_expired_share: float = 0.20
     """Weak when more than this share of decisions expired."""
+    weak_reproduction_rate: float = 0.5
+    """Level 2: weak when fewer than this share of logged choices came up in samples."""
 
 
 def assess(
@@ -57,6 +59,13 @@ def assess(
     if not absent_means_default and diag["expired_share"] > th.weak_expired_share:
         weak.append(
             f"{diag['expired_share']:.1%} of decisions expired (above {th.weak_expired_share:.0%})"
+        )
+    sampling = diag.get("sampling")
+    if sampling and sampling["reproduction_rate"] < th.weak_reproduction_rate:
+        weak.append(
+            f"the logged choice came up again in samples on only "
+            f"{sampling['reproduction_rate']:.0%} of decisions "
+            f"(below {th.weak_reproduction_rate:.0%})"
         )
     if weak:
         return "weak", weak

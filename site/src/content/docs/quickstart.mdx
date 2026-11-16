@@ -1,0 +1,94 @@
+---
+title: Quickstart
+description: Install agentope, log decisions with a little exploration, and evaluate your first change.
+section: Getting started
+order: 2
+---
+
+## Install
+
+agentope isn't on PyPI yet. Install it from GitHub; the `llm` extra is only needed to sample a model (Level 2).
+
+```sh
+uv add "agentope[llm] @ git+https://github.com/liminalplanes/agentope"
+# or
+pip install "agentope[llm] @ git+https://github.com/liminalplanes/agentope"
+```
+
+Python 3.14 or newer.
+
+## 1. Log decisions with a little exploration
+
+Wrap the decision. With probability ε it takes a random option from a list you consider safe, and records that it did. Those explored decisions give agentope exact probabilities.
+
+```python
+import agentope as ao
+
+tool = ao.explore(
+    "tool_choice",
+    llm_choice=tool_name,                      # what the LLM picked
+    safe_candidates=["search", "lookup_order", "__none__"],
+    epsilon=0.05,
+    context={"intent": intent, "tier": tier},  # what describes the situation
+    join_key=conversation_id,                  # links to the outcome later
+    log="decisions.jsonl",
+)
+```
+
+For decisions made in code, such as a model router, use `ao.randomize(...)` with explicit probabilities. Already tracing with OpenTelemetry? Write the coin flip onto the span instead and [import the traces](/docs/traces).
+
+<Callout kind="warning" title="Choose safe candidates deliberately">
+`explore` never picks outside `safe_candidates`. Deciding which actions are acceptable to take at random is your call.
+</Callout>
+
+## 2. Record outcomes
+
+One row per outcome, with the same join key and a timestamp (unix seconds, or ISO 8601 with a timezone). Record failures too, as `0`.
+
+```csv
+join_key,t,value
+conv-8812,1763283600,1
+conv-8813,1763283900,0
+```
+
+If your system only records successes, pass `--absent-means-default` when evaluating.
+
+## 3. Describe the policy to test
+
+A function from the situation to probabilities over the options. Options you leave out get probability 0.
+
+```python
+# policy.py
+def lookup_first(context, candidates):
+    if context["intent"] == "refund":
+        return {"lookup_order": 1.0}
+    return {"search": 1.0}
+```
+
+## 4. Evaluate
+
+`--horizon` is how long after a decision an outcome still counts.
+
+```sh
+agentope eval decisions.jsonl --decision-point tool_choice \
+    --outcomes outcomes.csv --horizon 7d --target policy.py:lookup_first
+```
+
+```text
+Evidence level   L1 Logged (ε-exploration)
+Logging policy   0.494  realized mean outcome (all 4,000 decisions)
+Target policy    0.663  SNIPS   (IPS 0.634)
+Difference      +0.169  95% CI [+0.068, +0.265]
+Verdict          ok
+```
+
+The same in Python:
+
+```python
+report = ao.evaluate("decisions.jsonl", outcomes="outcomes.csv", horizon="7d",
+                     target=lookup_first, decision_point="tool_choice")
+print(report)
+report.to_json()
+```
+
+Next: [Reading a report](/docs/reports).

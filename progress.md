@@ -4,17 +4,18 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 
 **Legend:** `[ ]` not started · `[~]` in progress / partial · `[x]` done
 
-**Status (2026-11-16):** v0.2 implemented: trace import (OTLP JSON, GenAI + OpenInference), `eval --traces`, `agentope.*` span attributes, `--absent-means-default`, on top of v0.1 (Levels 1 and 3, `eval`, logging helpers). 52 tests passing. Milestones were reordered at the owner's request: import moved to v0.2, Level 2 sampling to v0.3, DR / Γ / Level 4 to v0.4. Next: Level 2 sampling (§3).
+**Status (2026-11-16):** v0.3 implemented: Level 2 (`agentope sample` against OpenAI-compatible endpoints, resumable `samples.jsonl`, replay diagnostics), LLM target policies (`target.yaml`, `ao.LLMPolicy`) and `agentope check`, on top of v0.2 (trace import) and v0.1 (Levels 1 and 3). 61 tests passing. Next: v0.4 (DR, break-even Γ, Level 4), or the hardening items in §1.
 
 ---
 
 ## 0. Spec work
 
-### 0.1 Open questions that block upcoming work
+### 0.1 Open questions
 
-- [ ] **`samples.jsonl` schema** (§5.2, §12). Define the field layout: decision id, model id, parameters, N, raw action counts, input hash. *Blocks v0.3.*
-- [ ] **YAML for `target.yaml`.** Dependencies are allowed, so PyYAML can be a dependency (or part of `[llm]`). Decide when building v0.3.
-- [ ] **`check` timing.** Goal 1 promises a readiness report on existing traces. Import now exists, so `check` can run on traces in v0.3 without sampling.
+- [x] **`samples.jsonl` schema**: one line per (decision, policy) with raw counts (spec §5.2).
+- [x] **YAML for `target.yaml`**: PyYAML in the `llm` extra.
+- [x] **`check` timing**: shipped with Level 2; runs on traces or decisions.
+- [ ] **Default N and α** (§14 Q1–Q2). Simulation evidence: at N = 32 a logged choice with true propensity ≈ 0.11 sometimes never comes up, its smoothed propensity drops to 0.015 and weights reach ~68 (ESS < 10% of n → `weak`). N = 64 fixed it there. Consider raising the default N, or making `check` recommend N from the smallest propensity you need to resolve.
 
 ### 0.2 Spec issues found while implementing (all resolved in `spec.md`)
 
@@ -43,8 +44,8 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 ## 1. Project setup
 
 - [ ] Confirm the name is free on PyPI (§14 Q5).
-- [x] `pyproject.toml` via uv: package `agentope` 0.2.0 (src layout, `uv_build`), Python ≥ 3.14, numpy and scipy, console script `agentope`. *Not yet:* the `[llm]` extra (v0.3).
-- [x] Layout: `src/agentope/{io,decisions,outcomes,targets,propensity_model,estimators,verdict,report,evaluate,helpers,traces,action_maps,importer,cli}.py`.
+- [x] `pyproject.toml` via uv: package `agentope` 0.3.0 (src layout, `uv_build`), Python ≥ 3.14, numpy and scipy, console script `agentope`. `llm` extra with httpx and PyYAML.
+- [x] Layout: `src/agentope/{io,decisions,outcomes,targets,propensity_model,estimators,verdict,report,evaluate,helpers,traces,action_maps,importer,llm,sampling,checks,cli}.py`.
 - [~] Dev tooling: pytest and ruff. *Open:* type checking, CI.
 - [x] `argparse` CLI with exit codes `0` / `1` refused / `2` usage error.
 
@@ -76,7 +77,7 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 - [x] `logging_config` from request/response model, temperature, top_p, max_tokens (incl. OpenInference `llm.invocation_parameters`).
 - [x] Stored inputs (content capture on): chat-completions request body (system instructions, messages incl. tool calls and tool results, tool definitions, sampling parameters) in `inputs/`, plus `input_sha256`.
 - [x] Action maps: `tool`, `toolset`, `tool+args:<fields>`, custom `module:function`; parallel calls counted with a `toolset` hint.
-- [x] `agentope import` with the summary shown in `index.html`; `agentope eval --traces` (summary on stderr); `ao.import_traces()`.
+- [x] `agentope import` with the summary shown in the docs (From traces); `agentope eval --traces` (summary on stderr); `ao.import_traces()`.
 - [x] `ao.span_attributes()` for `explore` / `randomize`; round trip tested.
 - [x] `--absent-means-default` / `absent_means_default=True`.
 - [x] Tests: import → eval gives the same estimates as evaluating the decisions directly (explore, logged and unlogged data); GenAI with content; OpenInference; first vs. all; parallel calls; skips; context lookup; CLI.
@@ -86,22 +87,22 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 
 ---
 
-## 4. v0.3: sampling (Level 2) and `check`
+## 4. v0.3: sampling (Level 2) and `check` — done
 
-- [ ] Write the `samples.jsonl` format (from §0.1).
-- [ ] Stored-input loader (`input_ref` relative to the decisions file) and an `input_sha256` check.
-- [ ] OpenAI-compatible client under `[llm]`: `base_url` and key from env; concurrency limit, retries with backoff, rate-limit handling. Tests use a local mock server (owner's choice).
-- [ ] `agentope sample`: N samples per decision, action map applied to each sampled response, results cached, resumable after interruption.
-- [ ] `p̂ = (count + α) / (N + α·k)`, default α = 0.5 (§5.2).
-- [ ] Replay-fidelity diagnostics: pinned model id must match; reproduction rate of the logged choice; decisions where the chosen action appeared < 3 times.
-- [ ] Detect deterministic logging (temperature 0, or all samples identical): report the lack of overlap instead of an estimate.
-- [ ] Verdict rule: a reproduction rate < 50% gives `weak`.
-- [ ] `target.yaml`: model, system prompt replacement, temperature, tools (`unchanged` or a path).
-- [ ] `ao.LLMPolicy(render=, model=, n=)` in Python.
-- [ ] Cost estimate; confirmation prompt unless `--yes`; `--sample N` seeded subset.
-- [ ] `agentope check` readiness report (§10) on traces or decisions.
-- [ ] One-shot `eval --traces` runs sampling when the level needs it.
-- [ ] Pilot study: N at which estimates stabilize (§14 Q1); α vs. dropping decisions (§14 Q2).
+- [x] `samples.jsonl` format (spec §5.2); latest line per (decision, policy) wins.
+- [x] Stored-input loader (`input_ref` relative to the decisions file) and hash check against `input_sha256` from import (one canonical hash shared by import and sampling).
+- [x] OpenAI-compatible client in the `llm` extra (httpx): `--base-url` / `AGENTOPE_BASE_URL`, `AGENTOPE_API_KEY` / `OPENAI_API_KEY`; retries with exponential backoff and jitter on 408/409/425/429/5xx and transport errors, honouring `Retry-After`; other 4xx fail at once.
+- [x] `agentope sample` / `ao.sample()`: N samples per decision and policy, action map applied to each response, `--n-per-request` via the `n` parameter, `--concurrency`, `--sample K` seeded subset, `--model` override, `--no-logging`; resumes by skipping unchanged (decision, policy, model, params, request, action map, N).
+- [x] Cost shown before sampling; asks for confirmation, refuses without `--yes` when not in a terminal.
+- [x] Level 2 in `eval --samples`: `p̂ = (count + α) / (N + α·k)`, α = 0.5 (`--alpha`); support = actions never produced in samples; default level order 1 → 2 → 3.
+- [x] Replay diagnostics: reproduction rate (< 50% → `weak`), decisions with < 3 matching samples, response-model mismatch share, stored-input hash changes, failed and off-candidate samples, "same answer in every sample" (no overlap) warning.
+- [x] LLM targets: `target.yaml` / `.json` (`type: llm`; `name`, `model`, `system_prompt` as text or file, `temperature`, `top_p`, `max_tokens`, `tools: unchanged | file`; anything else refused with a pointer to the Python API) and `ao.LLMPolicy` (overrides or `render`). Probabilities = raw sample frequencies; off-candidate samples count as support violations.
+- [x] `agentope check` / `ao.check()` (§10) on traces or decisions: levels with reasons, call cost at N (logging + LLM target), context features, candidate sources, import warnings, best available level; `--json`.
+- [x] Tests with a local mock server: Level 2 recovers the true difference for a callable target and for an LLM target; resume and cache keys; 429 retries and 400 failures; changed model flagged; guards; `LLMPolicy`; `check`; CLI; traces with content → import → sample → eval.
+- [ ] One-shot `eval --traces` that samples when the level needs it (now: import + evaluate; sampling is a separate step).
+- [ ] Deterministic logging is detected from samples (every sample identical) and from `temperature: 0` in `check`; `eval` doesn't refuse, it warns.
+- [ ] Try against a real vLLM / Ollama server (tests use the mock only, by the owner's choice).
+- [ ] Pilot study on real data: N at which estimates stabilize (§14 Q1); α vs. dropping decisions (§14 Q2).
 
 ---
 
@@ -113,12 +114,18 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 
 ---
 
-## 6. Documentation
+## 6. Documentation and site
 
-- [x] `index.html`: what agentope is, evidence levels, guide, trace example, verdict meanings, troubleshooting.
-- [~] **The trace example in `index.html`.** The commands and summary format now match the real CLI. Its numbers are still illustrative, not from a run. Turn it into a runnable example (simulated support agent → OTLP traces → import → eval) and use real output.
-- [x] README: status, quickstart, trace import, `--absent-means-default`.
-- [ ] Keep `index.html`, `README.md` and the CLI in sync as features land.
+- [x] Site in `site/`: TanStack Start (React 19, Vite 8), Tailwind CSS v4, shadcn/ui (Radix), Geist fonts bundled, light/dark/system theme without a flash, Biome. Every page prerendered to static HTML (`npm run build` → `dist/client`).
+- [x] Landing page rebuilt from components and simplified: hero with a compact example report (interval drawn to scale), evidence levels as a plain list, the four commands in one code block, trusted vs. refused estimate, code tabs (highlighted at build time), FAQ. π logo (policy) and matching favicon; no yellow highlighter anywhere (removed at the owner's request), the interval band is neutral.
+- [x] Docs in MDX (`site/src/content/docs/`) with sidebar from frontmatter, "On this page" with scroll tracking, previous/next, copyable code blocks (Shiki, dual theme), callouts and verdict badges. Each page is its own chunk; the nav reads frontmatter only.
+- [x] Pages: Introduction, Quickstart, Evidence levels, Reading a report, From traces, Sampling the model, CLI, Python API, Data formats. The CLI page comes from the real `--help` output; the Python API page from the real signatures.
+- [x] Removed the hand-written root `index.html` and `guide.html` (content moved into the site).
+- [ ] **Generate the Python API reference** from docstrings (it's hand-written for v0.3.0 and will drift). Options: a small script that runs `inspect` and writes MDX at build time, or griffe → JSON → MDX.
+- [ ] **Hosting.** Pick a host. For GitHub Pages at `liminalplanes.github.io/agentope`, set a base path (`/agentope/`) in the router and Vite config, and add a Pages workflow. Root-domain hosts (Netlify, Vercel, Cloudflare Pages) need no change.
+- [ ] Search (e.g. a ⌘K command palette over the docs, built from frontmatter and headings at build time).
+- [ ] The example numbers on the landing page and in the docs' trace example are illustrative. Replace them with output from a runnable example (simulated support agent → OTLP traces → import → eval).
+- [ ] Keep the site, `README.md` and the CLI in sync as features land.
 
 ---
 
@@ -147,3 +154,8 @@ Tracks implementation against [`spec.md`](spec.md). Section numbers (§) refer t
 | 2026-11-16 | Import takes the first model call per agent run by default | One decision per turn, made before any tool result; `--decisions all` for every call |
 | 2026-11-16 | Tool spans beat response content for `chosen` when the export has tool spans | They show what actually ran (e.g. after exploration overrode the model) |
 | 2026-11-16 | Level 2 tests will use a mock server only | Owner's choice |
+| 2026-11-16 | `samples.jsonl`: one line per (decision, policy), raw counts | Smoothing changes don't need re-sampling; resume by key |
+| 2026-11-16 | LLM target probabilities are raw sample frequencies (no α) | They are never divided by, so smoothing would only add bias |
+| 2026-11-16 | `LLMPolicy` is evaluated from samples, not sampled inside `evaluate` | Keeps all LLM calls in the explicit `sample` step (spec goal: deterministic evaluation) |
+| 2026-11-16 | `httpx` and PyYAML in the `llm` extra | Spec §1: sampling is optional |
+| 2026-11-16 | Version 0.3.0 | Level 2 milestone complete |

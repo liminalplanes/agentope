@@ -63,6 +63,12 @@ def read_jsonl(path: PathArg) -> Iterator[tuple[int, dict[str, Any]]]:
             yield lineno, obj
 
 
+def canonical_sha256(obj: Any) -> str:
+    """SHA-256 of an object's canonical JSON (sorted keys, no whitespace)."""
+    text = json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
 def sha256_file(path: PathArg) -> str:
     h = hashlib.sha256()
     with Path(path).open("rb") as f:

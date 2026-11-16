@@ -1,0 +1,42 @@
+---
+title: Introduction
+description: What agentope does, the question it answers, and when to use it.
+section: Getting started
+order: 1
+---
+
+Teams change agents constantly: a new system prompt, a different model, a new tool, a different router. Most judge those changes with LLM-as-judge scores or slow A/B tests. agentope estimates a change's effect on **real outcomes**, such as resolved tickets or purchases, from the logs you already keep.
+
+## The question
+
+> For one decision point, if a different policy had made the choice instead of the one that ran, and everything else had stayed the same, what would the average outcome have been?
+
+The headline number is the **difference** between that estimate and what your agent actually achieved, with a 95% interval. Everything else in the report explains how far to trust it.
+
+## Decision points
+
+A decision point is one place where the agent picks from a few options:
+
+| Decision point | Options | Who decides today |
+|---|---|---|
+| `tool_choice` | `search`, `lookup_order`, `escalate`, `__none__` | the LLM |
+| `router` | `small-model`, `large-model` | code |
+| `system_prompt` | `v1`, `v2` | a flag |
+
+`__none__` is a real option: "the model answered without calling a tool" has to be a candidate, or tool-choice evaluation is biased. agentope evaluates **one decision point at a time** and holds everything else fixed, because importance weights multiplied over many steps have unusable variance.
+
+## Evidence, not just a number
+
+Off-policy evaluation needs to know how likely each logged choice was. Agents rarely record that, and token logprobs are not a reliable substitute, so agentope gets these probabilities in one of three ways and labels the result with its **evidence level**:
+
+1. **Logged**: a little traffic was randomized, and the probability was recorded.
+2. **Sampled**: the logging model is asked again on the stored input, N times.
+3. **Estimated**: a model of the logging policy is fit from the logged context.
+
+Each level states the assumptions it needs, and the report ends with a verdict: <Verdict kind="ok" />, <Verdict kind="weak" /> or <Verdict kind="unreliable" />. See [Evidence levels](/docs/evidence-levels).
+
+## Where to go next
+
+- [Quickstart](/docs/quickstart): log, record outcomes, evaluate.
+- [From traces](/docs/traces): start from an OpenTelemetry export.
+- [Reading a report](/docs/reports): what every line means.

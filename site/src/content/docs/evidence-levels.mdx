@@ -1,0 +1,63 @@
+---
+title: Evidence levels
+description: Where the probabilities of logged choices come from, and what each source assumes.
+section: Concepts
+order: 1
+---
+
+agentope weights each logged decision by how much more (or less) likely the target policy was to make the same choice. That needs the **propensity**: the probability the logging policy gave its choice. agentope evaluates at one level at a time and never mixes them. By default it picks the strongest level the data supports; `--level` chooses explicitly.
+
+## Level 1: Logged
+
+The system randomized a little, and recorded the probability it used.
+
+- **Code-made decisions** (router, prompt flag): decide with `ao.randomize`, which records the full distribution.
+- **LLM-made decisions**: wrap them in `ao.explore`. With probability ε the action is drawn uniformly from `safe_candidates` and the coin flip is logged. Only explored decisions are used; on those the propensity is exactly `1/k`.
+
+**Assumes:** the recorded probabilities are the ones used; the target puts no probability on actions the logger could never pick (checked).
+
+**Cost:** ε of traffic acts randomly within the safe options, and the effective sample is about ε·n. The report estimates how long you'd need to log for a useful interval.
+
+## Level 2: Sampled
+
+Nothing was randomized, but the stored model input is complete and the logging model can still be called. For each decision agentope asks the model again N times and counts its choices:
+
+```text
+p̂(a | x) = (count(a) + α) / (N + α·k)     # α = 0.5 by default
+```
+
+**Assumes:** the stored input is everything the model saw; the model behaves today as it did when logging; N is large enough. All three are partly checked. See [Sampling the model](/docs/sampling).
+
+## Level 3: Estimated
+
+No logged or sampled propensities. A multinomial logit of the logging policy is fit from the logged `context`, cross-fitted by join key.
+
+**Assumes:** every input that influenced both the choice and the outcome is in `context`. **This can't be checked from data**, so Level 3 refuses to run until you pass `--accept-unverifiable`. Its verdict is at best <Verdict kind="weak" />.
+
+## Level 4: Modeled
+
+No propensities at all; an outcome model only. Planned for v0.4.
+
+## Assumptions at a glance
+
+| Assumption | L1 | L2 | L3 | Checkable? |
+|---|:-:|:-:|:-:|---|
+| Correct propensities | logged | sampled | modeled | L1 yes · L2 partly · L3 calibration only |
+| No direct effect (action map) | ✓ | ✓ | ✓ | no, a design choice |
+| Overlap / support | ✓ | ✓ | ✓ | yes (ESS, support checks) |
+| Complete stored input | | ✓ | | partly (hash) |
+| Replay fidelity | | ✓ | | partly (model id, reproduction rate) |
+| No unmeasured confounding | | | ✓ | **no** |
+| Later steps unchanged | ✓ | ✓ | ✓ | no |
+| Outcome join correct | ✓ | ✓ | ✓ | partly (match rates) |
+
+## Action maps
+
+The action map turns what the agent did into an action id, and every report states its assumption:
+
+| Map | Action id | Assumes |
+|---|---|---|
+| `tool` (default) | tool name, or `__none__` | which tool is called matters, not its arguments |
+| `toolset` | tools called together, e.g. `lookup+search` | only the set of tools matters |
+| `tool+args:<fields>` | tool plus named argument fields | only the tool and those fields matter |
+| `module:function` | anything your function returns | whatever it ignores doesn't matter |

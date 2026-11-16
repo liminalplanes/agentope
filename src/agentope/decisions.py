@@ -101,6 +101,8 @@ class Decision:
     action_map: str | None = None
     """The action map that produced ``chosen`` (written by trace import)."""
     candidates_source: str | None = None
+    input_sha256: str | None = None
+    """Hash of the stored input as imported (checked again when sampling)."""
     """Where ``candidates`` came from; ``"inferred"`` means from actions seen in the logs."""
 
     @property
@@ -201,6 +203,9 @@ class Decision:
         action_map = d.get("action_map")
         if action_map is not None and not isinstance(action_map, str):
             raise DataError(f"{where}: action_map must be a string")
+        input_sha256 = d.get("input_sha256")
+        if input_sha256 is not None and not isinstance(input_sha256, str):
+            raise DataError(f"{where}: input_sha256 must be a string")
         candidates_source = d.get("candidates_source")
         if candidates_source is not None and not isinstance(candidates_source, str):
             raise DataError(f"{where}: candidates_source must be a string")
@@ -223,6 +228,7 @@ class Decision:
             logging_config=dict(logging_config) if logging_config is not None else None,
             action_map=action_map,
             candidates_source=candidates_source,
+            input_sha256=input_sha256,
         )
 
 

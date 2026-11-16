@@ -81,7 +81,10 @@ def render(r: Report) -> str:
         )
     _row(lines, "Decisions", f" {n:,}   {outcome_text}")
     if diag["n_excluded"]:
-        _row(lines, "", f" {diag['n_excluded']:,} without logged propensities excluded")
+        why = {1: "without logged propensities", 2: "without logging-model samples"}.get(
+            r.level, "without what this level needs"
+        )
+        _row(lines, "", f" {diag['n_excluded']:,} {why} excluded")
     if diag["unmatched_outcomes"]:
         _row(lines, "", f" {diag['unmatched_outcomes']:,} outcomes matched no decision")
     lines.append("")
@@ -121,6 +124,14 @@ def render(r: Report) -> str:
         f"{diag['max_weight']:.3g} · min propensity {diag['min_propensity']:.3g}",
     )
     _row(lines, "", f" {support}")
+    sampling = diag.get("sampling")
+    if sampling:
+        _row(
+            lines,
+            "",
+            f" logged choice reproduced in samples: {sampling['reproduction_rate']:.0%} · "
+            f"{sampling['low_count_decisions']:,} decisions with < 3 matching samples",
+        )
     model = diag.get("propensity_model")
     if model:
         features = ", ".join(model["context_features"]) or "none"

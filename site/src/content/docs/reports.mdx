@@ -1,0 +1,73 @@
+---
+title: Reading a report
+description: The estimate, the diagnostics, the verdict, and what to do when it says no.
+section: Concepts
+order: 2
+---
+
+```text
+agentope · tool_choice · target: policies.py:lookup_when_order_number
+────────────────────────────────────────────────────────────
+Evidence level   L1 Logged (ε-exploration)
+Decisions        1,012   (rewarded 1,012 · expired 0 · 0.0%)
+                 3,988 without logged propensities excluded
+
+Logging policy   0.583  realized mean outcome (all 5,000 decisions)
+Target policy    0.671  SNIPS   (IPS 0.664)
+Difference      +0.088  95% CI [+0.041, +0.134]
+
+Diagnostics      ESS 337 (33% of n) · max weight 3 · min propensity 0.333
+                 support violations 0
+
+Verdict          ok
+```
+
+## The estimate
+
+- **Logging policy**: what your agent actually achieved, over **all** decisions at the decision point, also when only some are used for the estimate.
+- **Target policy**: SNIPS (self-normalized inverse propensity scoring), with plain IPS beside it. A large gap between the two is a sign of instability.
+- **Difference** and **95% CI**: a percentile bootstrap that resamples whole join keys, so decisions sharing an outcome move together. Seeded, so the same files give the same interval.
+
+## Diagnostics
+
+| Line | Means |
+|---|---|
+| ESS | effective sample size, `(Σw)² / Σw²`; low means a few decisions carry the estimate |
+| max weight | the largest single weight; no clipping is ever applied |
+| support violations | target probability on actions the logging policy never took |
+| expired | decisions with no outcome within the horizon |
+| reproduced in samples | Level 2: how often the logged choice came up again |
+
+## Verdicts
+
+| Verdict | When |
+|---|---|
+| <Verdict kind="unreliable" /> | support violations carry more than 1% of target mass, ESS below 50, or more than 50% expired. The headline reads "no trustworthy estimate". |
+| <Verdict kind="weak" /> | Level 3, ESS below 10% of n, more than 20% expired, or a Level 2 reproduction rate below 50% |
+| <Verdict kind="ok" /> | otherwise |
+
+Thresholds are configurable in Python with `ao.VerdictThresholds`.
+
+## When things go wrong
+
+- **"refused"**: there are no logged propensities or samples, so it would need Level 3. Accept its assumption with `--accept-unverifiable`, or start logging with `explore`.
+- **Support violations**: the target picks options your logs never take. Nothing in the data can say how those would have gone; widen the safe candidates.
+- **Low ESS**: the target differs a lot from what was logged. Collect more explored decisions or raise ε.
+- **Many expired decisions**: check the join key and the horizon, and that failures are recorded. If only successes are ever recorded, use `--absent-means-default`.
+- **Logged choices don't come up again in samples**: the stored inputs are incomplete, or the model changed since logging.
+
+## Readiness: `agentope check`
+
+Before any of this, `check` tells you which levels your data supports, without outcomes or LLM calls:
+
+```text
+tool_choice · 4,812 decisions found in traces.otlp.json.gz
+
+  Level 1 Logged     ✗  no logged propensities  → use agentope.explore or agentope.randomize
+  Level 2 Sampled    ✓  stored inputs: 4,812/4,812 · logging model: qwen2.5-7b-instruct
+                        est. cost at N=32: 154k calls (logging)
+  Level 3 Estimated  ✓  context has 3 features: intent, has_order_number, customer_tier
+  Level 4 Modeled    –  not available yet (v0.4)
+
+  Best available: Level 2
+```

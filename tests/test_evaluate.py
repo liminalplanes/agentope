@@ -88,8 +88,10 @@ def test_requested_level_without_data_is_refused():
     decisions, outcomes = sim.simulate(50, seed=5, mode="unlogged")
     with pytest.raises(RefusedError, match="no decision has a logged propensity"):
         run(decisions, outcomes, level=1)
-    with pytest.raises(DataError, match="v0.3"):
+    with pytest.raises(RefusedError, match="agentope sample"):
         run(decisions, outcomes, level=2)
+    with pytest.raises(DataError, match="v0.4"):
+        run(decisions, outcomes, level=4)
 
 
 def test_support_violation_makes_result_unreliable():

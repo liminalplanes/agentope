@@ -11,15 +11,17 @@ diagnostics, a verdict (`ok` / `weak` / `unreliable`) and the assumptions it
 rests on. See [`spec.md`](spec.md) for the design and [`progress.md`](progress.md)
 for what is implemented.
 
-**Status: v0.2.** Level 1 (logged propensities, including ε-exploration),
-Level 3 (estimated propensities) and import of OpenTelemetry traces (GenAI and
-OpenInference conventions) are available. Level 2 (sampling the logging LLM)
-is next. [`index.html`](index.html) has a guided walkthrough.
+**Status: v0.3.** Level 1 (logged propensities, including ε-exploration),
+Level 2 (sampling the logging model on stored inputs), Level 3 (estimated
+propensities), LLM target policies, `check` and import of OpenTelemetry traces
+(GenAI and OpenInference conventions) are available. Level 4 and the
+doubly-robust estimator are next. The project site and documentation live in
+[`site/`](site/README.md) (`cd site && npm install && npm run dev`).
 
 ## Install
 
 ```sh
-uv sync            # in this repository
+uv sync --all-extras   # in this repository; the llm extra is needed for sampling
 uv run agentope --help
 ```
 
@@ -93,6 +95,41 @@ ao.explore(..., log=lambda record: span.set_attributes(ao.span_attributes(record
 If your system only records an outcome when something good happens, pass
 `--absent-means-default` so missing outcomes count as the default reward
 instead of making the result unreliable.
+
+## No exploration yet? Sample the model (Level 2)
+
+If content capture was on (so `import` wrote stored inputs) and you can still
+run the logging model, agentope can estimate propensities by asking the model
+again, N times per decision, on an OpenAI-compatible endpoint (vLLM, Ollama,
+llama.cpp, hosted APIs):
+
+```sh
+uv run agentope check decisions.jsonl                  # what's possible, and the call count
+uv run agentope sample decisions.jsonl -o samples.jsonl --n 32 \
+    --base-url http://localhost:8000/v1                 # the only step that calls an LLM
+uv run agentope eval decisions.jsonl --samples samples.jsonl \
+    --outcomes outcomes.csv --horizon 7d --target policy.py:escalate_pro
+```
+
+To evaluate a prompt or model change, describe it as an LLM target and sample
+it too:
+
+```yaml
+# v2.yaml
+type: llm
+model: qwen2.5-7b-instruct
+system_prompt: prompts/v2.txt     # replaces the system message
+temperature: 0.7
+```
+
+```sh
+uv run agentope sample decisions.jsonl -o samples.jsonl --target v2.yaml --base-url …
+uv run agentope eval decisions.jsonl --samples samples.jsonl --target v2.yaml …
+```
+
+Sampling resumes where it stopped and reuses what's already in `samples.jsonl`.
+The report checks replay fidelity: how often the logged choice comes up again,
+whether a different model answered, and whether stored inputs changed.
 
 ## Level 3
 

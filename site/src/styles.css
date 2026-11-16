@@ -1,0 +1,283 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* agentope: cool neutrals, black controls, and one accent, a highlighter yellow that marks
+   intervals and the thing that matters. Verdict colours are semantic and separate. */
+:root {
+  --background: #f6f7f9;
+  --foreground: #111318;
+  --card: #ffffff;
+  --card-foreground: #111318;
+  --popover: #ffffff;
+  --popover-foreground: #111318;
+  --primary: #111318;
+  --primary-foreground: #f6f7f9;
+  --secondary: #eef0f3;
+  --secondary-foreground: #111318;
+  --muted: #eef0f3;
+  --muted-foreground: #5b616e;
+  --accent: #eef0f3;
+  --accent-foreground: #111318;
+  --destructive: #b42318;
+  --border: #e2e5ea;
+  --input: #e2e5ea;
+  --ring: #111318;
+  --mark: #ffe14d;
+  --mark-foreground: #111318;
+  --ok: #1d7543;
+  --ok-bg: #e5f3ea;
+  --weak: #9a5800;
+  --weak-bg: #fbeedb;
+  --bad: #b42318;
+  --bad-bg: #fbe6e3;
+  --radius: 0.625rem;
+  --sidebar: #f6f7f9;
+  --sidebar-foreground: #111318;
+  --sidebar-primary: #111318;
+  --sidebar-primary-foreground: #f6f7f9;
+  --sidebar-accent: #eef0f3;
+  --sidebar-accent-foreground: #111318;
+  --sidebar-border: #e2e5ea;
+  --sidebar-ring: #111318;
+}
+
+.dark {
+  --background: #0c0e11;
+  --foreground: #eceef2;
+  --card: #14171c;
+  --card-foreground: #eceef2;
+  --popover: #14171c;
+  --popover-foreground: #eceef2;
+  --primary: #eceef2;
+  --primary-foreground: #0c0e11;
+  --secondary: #1b1f26;
+  --secondary-foreground: #eceef2;
+  --muted: #1b1f26;
+  --muted-foreground: #9aa1ad;
+  --accent: #1b1f26;
+  --accent-foreground: #eceef2;
+  --destructive: #f2806f;
+  --border: #262a32;
+  --input: #262a32;
+  --ring: #eceef2;
+  --mark: #f4d23a;
+  --mark-foreground: #111318;
+  --ok: #5fcb8d;
+  --ok-bg: #12261a;
+  --weak: #eaa94a;
+  --weak-bg: #2b200e;
+  --bad: #f2806f;
+  --bad-bg: #2d1411;
+  --sidebar: #0c0e11;
+  --sidebar-foreground: #eceef2;
+  --sidebar-primary: #eceef2;
+  --sidebar-primary-foreground: #0c0e11;
+  --sidebar-accent: #1b1f26;
+  --sidebar-accent-foreground: #eceef2;
+  --sidebar-border: #262a32;
+  --sidebar-ring: #eceef2;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-mark: var(--mark);
+  --color-mark-foreground: var(--mark-foreground);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-weak: var(--weak);
+  --color-weak-bg: var(--weak-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'ss01';
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  }
+}
+
+
+/* Shiki dual themes: colours come from CSS variables so the theme toggle applies. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+}
+
+/* Docs prose. */
+.prose-docs {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--foreground);
+}
+.prose-docs > * + * {
+  margin-top: 1.1em;
+}
+.prose-docs h1 {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+.prose-docs h2 {
+  margin-top: 2.6em;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+.prose-docs h3 {
+  margin-top: 2em;
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.prose-docs h2 + *,
+.prose-docs h3 + * {
+  margin-top: 0.6em;
+}
+.prose-docs p,
+.prose-docs li {
+  color: color-mix(in srgb, var(--foreground) 86%, var(--muted-foreground));
+}
+.prose-docs a {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 35%, transparent);
+  text-underline-offset: 3px;
+}
+.prose-docs a:hover {
+  text-decoration-color: var(--foreground);
+}
+.prose-docs strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.prose-docs ul,
+.prose-docs ol {
+  padding-left: 1.3em;
+}
+.prose-docs ul {
+  list-style: disc;
+}
+.prose-docs ol {
+  list-style: decimal;
+}
+.prose-docs li + li {
+  margin-top: 0.35em;
+}
+.prose-docs li::marker {
+  color: var(--muted-foreground);
+}
+.prose-docs :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+}
+.prose-docs pre {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.65;
+  overflow-x: auto;
+  padding: 1rem 1.1rem;
+}
+.prose-docs table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+}
+.prose-docs th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.prose-docs td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.prose-docs tr:last-child td {
+  border-bottom: 0;
+}
+.prose-docs blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+}
+.prose-docs hr {
+  border-color: var(--border);
+  margin-block: 2.5em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

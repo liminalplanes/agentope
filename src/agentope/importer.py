@@ -18,7 +18,6 @@ When input content was captured, the model input is written as a
 chat-completions request body, for Level 2 replay.
 """
 
-import hashlib
 import json
 import math
 import os
@@ -32,7 +31,7 @@ from typing import Any
 from .action_maps import NONE_ACTION, MissingArguments, ToolCall, resolve_action_map
 from .decisions import Decision
 from .errors import DataError
-from .io import PathArg, sha256_file
+from .io import PathArg, canonical_sha256, sha256_file
 from .traces import Span, TraceSet, read_otlp
 
 DEFAULT_JOIN_KEYS = ("gen_ai.conversation.id", "session.id")
@@ -636,8 +635,7 @@ def import_traces(
         body = _stored_input(span, config)
         if body is not None:
             summary.stored_inputs += 1
-            canonical = json.dumps(body, sort_keys=True, ensure_ascii=False).encode()
-            record["input_sha256"] = hashlib.sha256(canonical).hexdigest()
+            record["input_sha256"] = canonical_sha256(body)
             if written_dir is not None:
                 written_dir.mkdir(parents=True, exist_ok=True)
                 target = written_dir / f"{_safe_name(decision_id)}.json"

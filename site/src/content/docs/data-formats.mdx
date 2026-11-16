@@ -1,0 +1,76 @@
+---
+title: Data formats
+description: decisions.jsonl, outcomes, target.jsonl and samples.jsonl.
+section: Reference
+order: 3
+---
+
+All files are JSON Lines (optionally gzipped, detected by content). Unknown fields are ignored. Timestamps are unix seconds or ISO 8601 **with** a timezone.
+
+## decisions.jsonl
+
+```json
+{
+  "decision_id": "conv-8812:3",
+  "t": 1763280000.0,
+  "decision_point": "tool_choice",
+  "context": {"intent": "refund", "turn": 3, "tier": "pro"},
+  "candidates": ["search", "lookup_order", "escalate", "__none__"],
+  "chosen": "lookup_order",
+  "join_key": "conv-8812",
+  "propensity": null,
+  "explored": false
+}
+```
+
+| Field | Required | Notes |
+|---|:-:|---|
+| `decision_id` | ✓ | unique |
+| `t` | ✓ | decision time |
+| `decision_point` | ✓ | one per evaluation |
+| `context` | ✓ | flat dict of strings, numbers, booleans or null; may be `{}` |
+| `candidates` | ✓ | action ids; must include `chosen` |
+| `chosen` | ✓ | action id after the action map |
+| `join_key` | ✓ | key for joining outcomes |
+| `propensity` | | probability of `chosen` (Level 1) |
+| `propensity_source` | | `logged`, `sampled` or `estimated`; a propensity without a source counts as logged |
+| `explored` | | chosen by the ε-exploration coin |
+| `safe_candidates` | | the pool exploration drew from |
+| `logging_probs` | | the full logging distribution; makes the support check exact |
+| `input_ref` | | path to the stored model input (Level 2) |
+| `input_sha256` | | hash of that input at import |
+| `logging_config` | | model and sampling parameters |
+| `action_map` | | the map that produced `chosen` |
+| `candidates_source` | | `inferred` adds an assumption to the report |
+
+## Outcomes
+
+JSONL or CSV with the same columns.
+
+```csv
+join_key,t,value
+conv-8812,1763283600,1
+```
+
+The first outcome with `decision.t ≤ outcome.t < decision.t + horizon` is the reward; none within the horizon gives `default_reward`. Outcomes matching no decision are counted, not silently dropped. Decisions that share a join key each get the same outcome, and the report says so.
+
+## target.jsonl
+
+```json
+{"decision_id": "conv-8812:3", "probs": {"search": 0.1, "lookup_order": 0.7, "escalate": 0.2}}
+```
+
+Probabilities must sum to 1 over the decision's candidates; candidates left out get 0.
+
+## samples.jsonl
+
+Written by `agentope sample`, one line per decision and policy. Counts are raw; smoothing happens at evaluation.
+
+```json
+{"decision_id": "conv-8812:3", "policy": "logging", "model": "qwen2.5-7b-instruct",
+ "params": {"temperature": 0.7}, "input_sha256": "…", "stored_input_sha256": "…",
+ "action_map": "tool", "n": 32, "counts": {"lookup_order": 21, "search": 7, "__none__": 4},
+ "failed": 0, "response_models": {"qwen2.5-7b-instruct": 32}}
+```
+
+`policy` is `logging` or an LLM target's name. `failed` samples are excluded from `counts`. A rerun skips lines whose decision, policy, model, parameters, request, action map and N are unchanged; the latest line wins.

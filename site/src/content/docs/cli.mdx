@@ -1,0 +1,107 @@
+---
+title: CLI
+description: Every agentope command and option.
+section: Reference
+order: 1
+---
+
+```text
+agentope check   what can be evaluated with this data (no LLM calls, no outcomes)
+agentope import  turn OTLP JSON traces into decisions.jsonl
+agentope sample  Level 2: sample the logging model (and LLM targets) on stored inputs
+agentope eval    estimate how a target policy would have done on logged decisions
+```
+
+**Exit codes:** `0` report produced · `1` refused (a guard fired, or sampling declined) · `2` usage error.
+
+## check
+
+```sh
+agentope check decisions.jsonl
+agentope check --traces traces.otlp.json.gz --context intent=app.intent
+```
+
+| Option | Default | |
+|---|---|---|
+| `decisions` | | decisions.jsonl, or use `--traces` |
+| `--traces` | | check an OTLP JSON export instead |
+| `--decision-point` | all | only this decision point |
+| `--n` | `32` | samples per decision, for the cost estimate |
+| `--target` | | an LLM target (`target.yaml`), to include its sampling cost |
+| `--json` | | machine-readable output |
+
+Plus the [trace import options](#trace-import-options) with `--traces`.
+
+## import
+
+```sh
+agentope import --traces traces.otlp.json.gz -o decisions.jsonl
+```
+
+| Option | Default | |
+|---|---|---|
+| `--traces` | required | OTLP JSON export, optionally gzipped |
+| `-o, --output` | required | decisions.jsonl to write |
+| `--decision-point` | `tool_choice` | name for the decisions |
+| `--inputs-dir` | `inputs/` next to the output | where stored model inputs go when content was captured |
+
+## sample
+
+```sh
+agentope sample decisions.jsonl -o samples.jsonl --n 64 --base-url http://localhost:8000/v1
+```
+
+| Option | Default | |
+|---|---|---|
+| `decisions` | required | decisions.jsonl with stored inputs |
+| `-o, --output` | required | samples.jsonl, appended to |
+| `--n` | `32` | samples per decision and policy |
+| `--target` | | an LLM target to sample as well; repeatable |
+| `--no-logging` | | only sample the targets |
+| `--base-url` | `AGENTOPE_BASE_URL` | OpenAI-compatible endpoint |
+| `--model` | from the stored input | logging model name on this endpoint, if it differs |
+| `--concurrency` | `8` | parallel requests |
+| `--n-per-request` | `1` | samples per request via the `n` parameter, if the server supports it |
+| `--sample` | all | only a random subset of decisions |
+| `--seed` | `0` | seed for `--sample` |
+| `--decision-point` | all | only this decision point |
+| `--yes` | | don't ask before calling the LLM |
+
+The API key comes from `AGENTOPE_API_KEY` or `OPENAI_API_KEY` (optional for local servers).
+
+## eval
+
+```sh
+agentope eval decisions.jsonl --outcomes outcomes.csv --horizon 7d --target policy.py:lookup_first
+```
+
+| Option | Default | |
+|---|---|---|
+| `decisions` | | decisions.jsonl, or use `--traces` |
+| `--traces` | | evaluate straight from an OTLP JSON export |
+| `--outcomes` | required | outcomes as JSONL or CSV |
+| `--horizon` | required | how long an outcome still counts: `7d`, `12h`, `30m` |
+| `--target` | required | `target.jsonl`, an LLM target (`target.yaml`), or `module:function` / `file.py:function` |
+| `--samples` | | samples.jsonl from `sample` (Level 2, LLM targets) |
+| `--alpha` | `0.5` | Level 2 smoothing |
+| `--decision-point` | | required when decisions cover several points |
+| `--level` | strongest available | `1`, `2` or `3` |
+| `--accept-unverifiable` | | accept Level 3's untestable assumption |
+| `--default-reward` | `0` | outcome when none arrives within the horizon |
+| `--absent-means-default` | | a missing outcome really means the default (success-only logs) |
+| `--seed` | `0` | seed for the bootstrap and folds |
+| `--bootstrap` | `2000` | bootstrap resamples |
+| `--folds` | `5` | cross-fitting folds at Level 3 |
+| `--json` | | print the report as JSON |
+| `-o, --output` | | also write the JSON report to this file |
+
+## Trace import options
+
+Shared by `import`, and by `check` and `eval` with `--traces`.
+
+| Option | Default | |
+|---|---|---|
+| `--map` | `tool` | action map: `tool`, `toolset`, `tool+args:<fields>`, or `module:function` |
+| `--context` | none | context features from span attributes: `intent=app.intent,tier=app.tier` |
+| `--join-key` | `gen_ai.conversation.id`, `session.id`, trace id | attribute holding the outcome key |
+| `--decisions` | `first` | first model call per agent run, or `all` |
